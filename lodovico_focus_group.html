@@ -1,0 +1,2621 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280, initial-scale=1">
+<title>Lodovico & IIIF — Focus Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #f3ead8;
+    --parchment-deep: #e8dcc1;
+    --parchment-shadow: #d9c9a4;
+    --ink: #1a1410;
+    --ink-soft: #3a2f24;
+    --oxblood: #6b1f1f;
+    --oxblood-deep: #4a1414;
+    --gold: #b08c3a;
+    --gold-soft: #d9b96a;
+    --teal: #1f5d5d;
+    --rule: #b8a685;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: var(--ink);
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+  }
+  /* ------ Deck container ------ */
+  .deck {
+    width: 100vw; height: 100vh; position: relative;
+  }
+  .slide {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    background: var(--parchment);
+    display: none;
+    overflow: hidden;
+    padding: 60px 90px;
+  }
+  .slide.active { display: flex; flex-direction: column; }
+  /* Subtle paper texture using layered gradients */
+  .slide::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(176,140,58,0.08), transparent 60%),
+      radial-gradient(ellipse at 80% 90%, rgba(107,31,31,0.06), transparent 55%),
+      repeating-linear-gradient(90deg, transparent 0, transparent 3px, rgba(58,47,36,0.012) 3px, rgba(58,47,36,0.012) 4px);
+    mix-blend-mode: multiply;
+  }
+  .slide::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    box-shadow: inset 0 0 120px rgba(74,20,20,0.08);
+  }
+  /* ------ Top label ------ */
+  .top-label {
+    position: absolute; top: 36px; left: 90px; right: 90px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'Inter', sans-serif; font-size: 11px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--ink-soft); z-index: 5;
+  }
+  .top-label .brand { font-weight: 600; color: var(--oxblood); }
+  .top-label .brand::before {
+    content: '◆'; margin-right: 8px; color: var(--gold);
+  }
+  .top-label .num { font-variant-numeric: tabular-nums; }
+  /* ------ Slide footer ------ */
+  .foot {
+    position: absolute; bottom: 30px; left: 90px; right: 90px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--ink-soft); z-index: 5;
+  }
+  /* ------ Typography ------ */
+  h1.title-main {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: 130px;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  h1.title-main em {
+    font-style: italic; color: var(--oxblood);
+  }
+  h2.slide-h {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: 64px;
+    line-height: 1.0;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    margin-bottom: 30px;
+  }
+  h2.slide-h em {
+    font-style: italic; color: var(--oxblood); font-weight: 500;
+  }
+  h2.slide-h .ornament {
+    color: var(--gold); font-weight: 400; margin-right: 14px;
+  }
+  h3.sub {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500; font-size: 13px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--oxblood); margin-bottom: 20px;
+  }
+  p.lead {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400; font-size: 28px;
+    line-height: 1.4; color: var(--ink-soft);
+    max-width: 900px;
+  }
+  p.body {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400; font-size: 16px;
+    line-height: 1.6; color: var(--ink-soft);
+    max-width: 720px;
+  }
+  /* Decorative ornaments */
+  .ornament-rule {
+    display: flex; align-items: center; gap: 14px;
+    color: var(--gold); font-size: 18px; margin: 22px 0;
+  }
+  .ornament-rule::before, .ornament-rule::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--rule), transparent);
+  }
+  .ornament-rule::before { background: linear-gradient(90deg, transparent, var(--rule)); }
+  .ornament-rule::after  { background: linear-gradient(90deg, var(--rule), transparent); }
+
+  /* Big folio frame for title */
+  .folio {
+    position: absolute; pointer-events: none;
+    border: 1px solid var(--rule);
+  }
+  .folio.outer { inset: 50px 80px; }
+  .folio.inner { inset: 56px 86px; border-color: rgba(176,134,58,0.4); }
+
+  /* Navigation buttons */
+  .nav {
+    position: fixed; bottom: 18px; right: 24px;
+    display: flex; gap: 8px; z-index: 100;
+  }
+  .nav button {
+    background: rgba(26,20,16,0.85); color: var(--parchment);
+    border: 1px solid var(--gold-soft); border-radius: 50%;
+    width: 38px; height: 38px; font-size: 16px; cursor: pointer;
+    font-family: 'Cormorant Garamond', serif;
+    transition: all 0.2s;
+  }
+  .nav button:hover { background: var(--oxblood); border-color: var(--gold); }
+  .progress {
+    position: fixed; bottom: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, var(--gold), var(--oxblood));
+    z-index: 99; transition: width 0.35s ease;
+  }
+
+  /* ============ SLIDE 1 — Title ============ */
+  .s1 { padding: 0; }
+  .s1-inner {
+    position: absolute; inset: 80px 110px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    z-index: 3;
+  }
+  .s1-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .s1-meta {
+    font-family: 'Inter', sans-serif; font-size: 11px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--ink-soft); line-height: 2;
+  }
+  .s1-meta .ms { color: var(--oxblood); font-weight: 600; }
+  .s1-mark {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 22px; color: var(--oxblood);
+    text-align: right; line-height: 1.3;
+  }
+  .s1-mark .yr {
+    display: block; font-style: normal; font-size: 11px; letter-spacing: 0.3em;
+    text-transform: uppercase; color: var(--ink-soft); margin-top: 6px;
+  }
+  .s1-center {
+    display: flex; flex-direction: column;
+  }
+  .s1-pretitle {
+    font-family: 'Inter', sans-serif; font-size: 12px;
+    letter-spacing: 0.5em; text-transform: uppercase;
+    color: var(--oxblood); font-weight: 600; margin-bottom: 24px;
+  }
+  .s1-subtitle {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 36px; color: var(--ink-soft); margin-top: 24px;
+    line-height: 1.25; max-width: 950px;
+  }
+  .s1-bottom {
+    display: flex; justify-content: space-between; align-items: flex-end;
+  }
+  .s1-tagline {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 18px; color: var(--ink-soft); max-width: 460px;
+    line-height: 1.4;
+  }
+  .s1-stamp {
+    width: 130px; height: 130px;
+    border: 2px solid var(--oxblood); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 14px;
+    color: var(--oxblood); font-family: 'Cormorant Garamond', serif;
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    line-height: 1.4; font-weight: 600;
+    transform: rotate(-6deg);
+    background: rgba(243,234,216,0.4);
+  }
+  .s1-stamp .big {
+    display: block; font-size: 28px; font-style: italic;
+    letter-spacing: 0; text-transform: none; margin: 4px 0;
+    font-weight: 500;
+  }
+  /* Decorative shapes for title */
+  .s1-flourish {
+    position: absolute; right: 80px; top: 40%;
+    transform: translateY(-50%);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 320px; color: var(--oxblood);
+    opacity: 0.07; line-height: 1; font-style: italic;
+    pointer-events: none; user-select: none;
+  }
+
+  /* ============ SLIDE 2 — Agenda ============ */
+  .agenda-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 22px 50px; margin-top: 30px;
+    flex: 1; align-content: center;
+  }
+  .agenda-item {
+    display: flex; gap: 22px; align-items: flex-start;
+    padding: 18px 0;
+    border-top: 1px solid var(--rule);
+  }
+  .agenda-num {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 38px; color: var(--oxblood); line-height: 1;
+    min-width: 50px;
+  }
+  .agenda-text { flex: 1; }
+  .agenda-title {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500;
+    font-size: 22px; color: var(--ink); margin-bottom: 4px;
+  }
+  .agenda-time {
+    font-family: 'Inter', sans-serif; font-size: 11px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  /* ============ SLIDE 3 — Problem ============ */
+  .s3.active { flex-direction: row; }
+  .s3-left {
+    flex: 1; display: flex; flex-direction: column;
+    justify-content: center; padding-right: 60px;
+  }
+  .s3-right {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .silos {
+    width: 100%; max-width: 520px; aspect-ratio: 1;
+    position: relative;
+  }
+  .silo {
+    position: absolute; width: 110px; height: 110px;
+    border: 1.5px solid var(--ink-soft);
+    background: var(--parchment-deep);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 16px; color: var(--ink); text-align: center;
+    line-height: 1.2; padding: 8px;
+    border-radius: 4px;
+    box-shadow: 4px 4px 0 var(--rule);
+  }
+  .silo.s-a { top: 0; left: 0; }
+  .silo.s-b { top: 0; right: 0; transform: rotate(2deg); }
+  .silo.s-c { top: 50%; left: 25%; transform: translateY(-50%) rotate(-3deg); }
+  .silo.s-d { bottom: 0; left: 0; transform: rotate(-1deg); }
+  .silo.s-e { bottom: 0; right: 0; }
+  .silos .x {
+    position: absolute; font-family: 'Cormorant Garamond', serif;
+    font-size: 96px; color: var(--oxblood); font-style: italic;
+    top: 50%; left: 60%; transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .pain-list {
+    list-style: none; margin-top: 30px;
+  }
+  .pain-list li {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px; color: var(--ink-soft); margin-bottom: 14px;
+    padding-left: 28px; position: relative; font-style: italic;
+    line-height: 1.4;
+  }
+  .pain-list li::before {
+    content: '✕'; position: absolute; left: 0;
+    color: var(--oxblood); font-style: normal; font-weight: 600;
+  }
+
+  /* ============ SLIDE 4 — What is Lodovico ============ */
+  .s4-content {
+    display: flex; flex-direction: column;
+    justify-content: center; flex: 1;
+    max-width: 1100px;
+  }
+  .pillars {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 24px; margin-top: 36px;
+  }
+  .pillar {
+    border-top: 2px solid var(--oxblood);
+    padding-top: 16px;
+  }
+  .pillar h4 {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600;
+    font-size: 20px; color: var(--ink); margin-bottom: 8px;
+    font-style: italic;
+  }
+  .pillar p {
+    font-family: 'Inter', sans-serif; font-size: 13px;
+    line-height: 1.55; color: var(--ink-soft);
+  }
+  .quote-mark {
+    position: absolute; right: 90px; top: 100px;
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 320px; line-height: 0.7;
+    color: var(--oxblood); opacity: 0.1;
+    pointer-events: none;
+  }
+
+  /* ============ SLIDE 5 — In numbers ============ */
+  .nums-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 30px; margin-top: 50px;
+  }
+  .num-card {
+    text-align: center; padding: 30px 12px;
+    border: 1px solid var(--rule);
+    background: rgba(255,255,255,0.3);
+    border-radius: 4px;
+    position: relative;
+  }
+  .num-card .big {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 88px; line-height: 1; font-weight: 500;
+    color: var(--oxblood); font-style: italic;
+  }
+  .num-card .lab {
+    font-family: 'Inter', sans-serif; font-size: 11px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--ink-soft); margin-top: 12px;
+  }
+  .nums-detail {
+    margin-top: 60px; display: grid; grid-template-columns: 1fr 1fr;
+    gap: 50px;
+  }
+  .nums-detail h4 {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 22px; color: var(--ink); margin-bottom: 14px;
+  }
+  .nums-detail ul {
+    list-style: none; columns: 2; column-gap: 30px;
+  }
+  .nums-detail li {
+    font-family: 'Inter', sans-serif; font-size: 12px;
+    color: var(--ink-soft); padding: 4px 0; line-height: 1.4;
+    break-inside: avoid;
+  }
+  /* ============ SLIDE 6 — Multi-tenant architecture ============ */
+  .arch-wrap {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    margin-top: 30px;
+  }
+  .arch-svg { width: 100%; max-width: 1000px; height: auto; }
+
+  /* ============ SLIDE 7 — Homepage screenshot ============ */
+  .s7.active { flex-direction: row; gap: 50px; }
+  .s7-left { flex: 0 0 360px; padding-top: 20px; }
+  .s7-right {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+  }
+  .browser-mock {
+    width: 100%; max-width: 660px;
+    border: 1px solid var(--ink-soft);
+    border-radius: 8px; overflow: hidden;
+    background: white;
+    box-shadow: 8px 8px 0 var(--rule);
+  }
+  .browser-bar {
+    background: linear-gradient(180deg, #ebe4d2, #d9cba7);
+    padding: 8px 14px; display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .browser-bar .dots { display: flex; gap: 5px; }
+  .browser-bar .dot { width: 10px; height: 10px; border-radius: 50%; background: #c08b6e; border: 1px solid #8b5a3e; }
+  .browser-bar .dot:nth-child(2) { background: #d4b078; border-color: #8c7140; }
+  .browser-bar .dot:nth-child(3) { background: #8aa172; border-color: #5a6948; }
+  .browser-bar .url {
+    flex: 1; background: rgba(255,255,255,0.6); padding: 4px 12px;
+    border-radius: 14px; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--ink-soft); margin-left: 10px;
+  }
+  .lodovico-page {
+    aspect-ratio: 16 / 10;
+    background: linear-gradient(180deg, #f8f1de 0%, #efe3c4 100%);
+    position: relative; overflow: hidden;
+    font-family: 'Inter', sans-serif;
+  }
+  .lp-header {
+    background: var(--ink); color: white; padding: 10px 18px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 9px; letter-spacing: 0.18em;
+  }
+  .lp-logo {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 16px; color: var(--gold-soft); letter-spacing: 0;
+  }
+  .lp-nav { display: flex; gap: 14px; }
+  .lp-hero { padding: 28px 22px; }
+  .lp-pretitle { font-size: 9px; letter-spacing: 0.3em; color: var(--oxblood); margin-bottom: 8px; font-weight: 600; }
+  .lp-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 34px;
+    color: var(--ink); line-height: 1; margin-bottom: 8px;
+  }
+  .lp-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 14px; color: var(--ink-soft); max-width: 360px;
+  }
+  .lp-cta {
+    display: inline-block; margin-top: 16px;
+    background: var(--oxblood); color: var(--parchment);
+    padding: 6px 14px; font-size: 9px; letter-spacing: 0.22em;
+    text-transform: uppercase; border-radius: 2px;
+  }
+  .lp-tiles {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    padding: 0 22px 18px;
+  }
+  .lp-tile {
+    aspect-ratio: 1; background: rgba(107,31,31,0.12);
+    border: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 11px; color: var(--ink-soft); text-align: center;
+    padding: 4px; line-height: 1.1;
+  }
+  .lp-tile:nth-child(2) { background: rgba(176,140,58,0.14); }
+  .lp-tile:nth-child(3) { background: rgba(31,93,93,0.12); }
+  .lp-tile:nth-child(4) { background: rgba(58,47,36,0.10); }
+
+  .annot-list { list-style: none; margin-top: 26px; }
+  .annot-list li {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 12px 0; border-top: 1px solid var(--rule);
+  }
+  .annot-num {
+    flex: 0 0 28px; height: 28px; border-radius: 50%;
+    border: 1.5px solid var(--oxblood); color: var(--oxblood);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 16px; font-weight: 600;
+  }
+  .annot-text {
+    font-family: 'Inter', sans-serif; font-size: 13px;
+    color: var(--ink-soft); line-height: 1.5; padding-top: 4px;
+  }
+  .annot-text strong {
+    color: var(--ink); font-weight: 600;
+  }
+
+  /* ============ SLIDE 8 — Collections ============ */
+  .coll-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 26px; margin-top: 30px; flex: 1;
+    align-content: start;
+  }
+  .coll-card {
+    border: 1px solid var(--rule);
+    background: rgba(255,255,255,0.35);
+    padding: 22px 22px 26px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .coll-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: var(--oxblood);
+  }
+  .coll-card.gold::before { background: var(--gold); }
+  .coll-card.teal::before { background: var(--teal); }
+  .coll-card .glyph {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 38px; color: var(--oxblood); line-height: 1;
+    margin-bottom: 14px;
+  }
+  .coll-card.gold .glyph { color: var(--gold); }
+  .coll-card.teal .glyph { color: var(--teal); }
+  .coll-card h4 {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500;
+    font-style: italic; font-size: 22px; margin-bottom: 12px;
+  }
+  .coll-card p {
+    font-family: 'Inter', sans-serif; font-size: 13px;
+    color: var(--ink-soft); line-height: 1.55;
+  }
+  .coll-card ul {
+    list-style: none; margin-top: 12px;
+    font-family: 'Inter', sans-serif; font-size: 11px;
+    color: var(--ink-soft); line-height: 1.7;
+  }
+  .coll-card ul li::before {
+    content: '— '; color: var(--gold); margin-right: 4px;
+  }
+
+  /* ============ SLIDE 9 — What is IIIF ============ */
+  .s9.active { flex-direction: row; gap: 60px; }
+  .s9-left { flex: 1.2; display: flex; flex-direction: column; justify-content: center; }
+  .s9-right {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+  }
+  .iiif-mark {
+    width: 280px; height: 280px;
+    background: var(--ink); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--parchment);
+    font-family: 'Cormorant Garamond', serif;
+    text-align: center;
+    box-shadow: 10px 10px 0 var(--gold-soft);
+    position: relative;
+  }
+  .iiif-mark .iii {
+    font-size: 110px; line-height: 1; font-weight: 500;
+    color: var(--gold-soft); letter-spacing: -0.02em;
+  }
+  .iiif-mark .f {
+    position: absolute; right: 56px; bottom: 60px;
+    font-size: 110px; line-height: 1; font-weight: 500; font-style: italic;
+    color: var(--oxblood);
+  }
+  .iiif-mark .label {
+    position: absolute; bottom: 28px; left: 0; right: 0;
+    font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--parchment); opacity: 0.7;
+  }
+
+  .iiif-stat {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 24px; margin-top: 32px;
+  }
+  .iiif-stat .it strong {
+    display: block; font-family: 'Cormorant Garamond', serif;
+    font-style: italic; font-size: 36px; color: var(--oxblood);
+    line-height: 1;
+  }
+  .iiif-stat .it span {
+    display: block; font-family: 'Inter', sans-serif; font-size: 11px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--ink-soft); margin-top: 6px;
+  }
+
+  /* ============ SLIDE 10 — Four APIs ============ */
+  .api-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 18px; margin-top: 30px; flex: 1;
+    align-content: stretch;
+  }
+  .api-card {
+    border: 1.5px solid var(--ink); border-radius: 4px;
+    padding: 20px; display: flex; flex-direction: column;
+    background: rgba(255,255,255,0.3);
+    position: relative;
+  }
+  .api-num {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 56px; color: var(--gold); line-height: 1;
+    margin-bottom: 10px;
+  }
+  .api-card h4 {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600;
+    font-size: 22px; color: var(--oxblood); margin-bottom: 4px;
+  }
+  .api-card .api-en {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    color: var(--ink-soft); letter-spacing: 0.05em;
+    margin-bottom: 14px; text-transform: uppercase;
+  }
+  .api-card p {
+    font-family: 'Inter', sans-serif; font-size: 12px;
+    color: var(--ink-soft); line-height: 1.5; flex: 1;
+  }
+  .api-card .pillar-tag {
+    margin-top: 14px;
+    font-family: 'Inter', sans-serif; font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--gold); font-weight: 600;
+  }
+
+  /* ============ SLIDE 11 — Image API URL ============ */
+  .url-decoder {
+    background: var(--ink); color: var(--parchment);
+    padding: 36px; border-radius: 6px;
+    margin-top: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    box-shadow: 8px 8px 0 var(--oxblood);
+  }
+  .url-line {
+    font-size: 18px; line-height: 1.6; word-break: break-all;
+  }
+  .url-line .seg { padding: 2px 4px; border-radius: 2px; }
+  .seg-base { background: rgba(176,140,58,0.4); color: #fde7b4; }
+  .seg-id { background: rgba(31,93,93,0.5); color: #a8d8d8; }
+  .seg-region { background: rgba(217,185,106,0.3); color: #f8e4a8; }
+  .seg-size { background: rgba(218,107,106,0.3); color: #f8b8b8; }
+  .seg-rot { background: rgba(176,140,58,0.5); color: #ffd87a; }
+  .seg-qual { background: rgba(124,166,124,0.3); color: #c8e0c8; }
+  .url-legend {
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    gap: 14px; margin-top: 24px;
+    font-family: 'Inter', sans-serif; font-size: 10px;
+  }
+  .url-legend .lg-item {
+    border-top: 2px solid; padding-top: 6px;
+  }
+  .url-legend .lg-item strong {
+    display: block; font-size: 11px; color: var(--parchment); margin-bottom: 3px;
+    font-family: 'JetBrains Mono', monospace; font-weight: 500;
+  }
+  .url-legend .lg-item span {
+    color: rgba(243,234,216,0.7); font-size: 9px; line-height: 1.4;
+  }
+
+  .examples-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; margin-top: 26px;
+  }
+  .ex-card {
+    border: 1px solid var(--rule); border-radius: 4px;
+    padding: 14px; background: rgba(255,255,255,0.3);
+  }
+  .ex-card .ex-tag {
+    font-family: 'Inter', sans-serif; font-size: 9px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--oxblood); margin-bottom: 6px; font-weight: 600;
+  }
+  .ex-card code {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--ink); display: block; word-break: break-all;
+    line-height: 1.4;
+  }
+
+  /* ============ SLIDE 12 — Manifest concept ============ */
+  .s12.active { flex-direction: row; gap: 40px; }
+  .s12-left { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .s12-right { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .manifest-pkg {
+    width: 100%; max-width: 380px; aspect-ratio: 1;
+    background: var(--parchment-deep);
+    border: 1.5px solid var(--ink-soft);
+    border-radius: 6px;
+    padding: 24px; position: relative;
+    box-shadow: 10px 10px 0 var(--oxblood);
+  }
+  .manifest-pkg .pkg-stamp {
+    position: absolute; top: -14px; right: 16px;
+    background: var(--oxblood); color: var(--parchment);
+    padding: 4px 12px; font-size: 10px; letter-spacing: 0.2em;
+    text-transform: uppercase; font-weight: 600;
+    border-radius: 2px;
+  }
+  .pkg-title {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 24px; color: var(--ink); margin-bottom: 4px;
+  }
+  .pkg-meta {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    color: var(--ink-soft); margin-bottom: 16px;
+  }
+  .pkg-content {
+    list-style: none;
+  }
+  .pkg-content li {
+    padding: 8px 0; border-bottom: 1px dashed var(--rule);
+    font-family: 'Inter', sans-serif; font-size: 11px;
+    color: var(--ink-soft); display: flex; gap: 8px;
+  }
+  .pkg-content li::before {
+    content: '◇'; color: var(--gold); font-size: 14px; line-height: 1; flex: 0 0 12px;
+  }
+  .pkg-content li strong {
+    color: var(--ink); font-weight: 600; min-width: 90px;
+  }
+
+  .def-block {
+    border-left: 3px solid var(--oxblood); padding: 12px 0 12px 18px;
+    margin: 18px 0;
+  }
+  .def-block .def-term {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 28px; color: var(--ink); margin-bottom: 6px;
+  }
+  .def-block .def-text {
+    font-family: 'Inter', sans-serif; font-size: 14px;
+    color: var(--ink-soft); line-height: 1.55;
+  }
+
+  /* ============ SLIDE 13 — Real manifest JSON ============ */
+  .json-wrap {
+    flex: 1; display: flex; gap: 24px; margin-top: 24px;
+    overflow: hidden;
+  }
+  .json-block {
+    flex: 1.2; background: var(--ink); color: var(--parchment);
+    border-radius: 6px; padding: 22px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    line-height: 1.6; overflow-y: auto;
+    box-shadow: 8px 8px 0 var(--oxblood);
+  }
+  .jk { color: #c0a96a; }   /* keys */
+  .js { color: #d39595; }   /* strings */
+  .jn { color: #9bb8a8; }   /* numbers/values */
+  .jc { color: #6c5d44; font-style: italic; } /* comments */
+  .jp { color: #908070; }   /* punctuation */
+  .json-block .hl {
+    background: rgba(176,140,58,0.2); display: inline-block;
+    padding: 0 4px; border-radius: 2px;
+  }
+  .legend-block {
+    flex: 1; display: flex; flex-direction: column; gap: 12px;
+  }
+  .legend-block .lb-item {
+    background: rgba(255,255,255,0.4);
+    border-left: 3px solid var(--gold);
+    padding: 12px 14px; border-radius: 0 4px 4px 0;
+  }
+  .lb-item .lb-key {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--oxblood); font-weight: 600; margin-bottom: 4px;
+  }
+  .lb-item .lb-desc {
+    font-family: 'Inter', sans-serif; font-size: 11.5px;
+    color: var(--ink-soft); line-height: 1.45;
+  }
+
+  /* ============ SLIDE 14 — Hierarchy ============ */
+  .hierarchy {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    margin-top: 20px;
+  }
+  .hier-svg { width: 100%; max-width: 1100px; height: auto; }
+
+  /* ============ SLIDE 15 — Viewers ============ */
+  .viewer-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 24px; margin-top: 30px; flex: 1;
+  }
+  .viewer-card {
+    background: rgba(255,255,255,0.4); border: 1px solid var(--rule);
+    border-radius: 6px; padding: 22px;
+    display: flex; gap: 18px; align-items: flex-start;
+  }
+  .viewer-icon {
+    flex: 0 0 60px; height: 60px;
+    background: var(--ink); border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold-soft); font-family: 'Cormorant Garamond', serif;
+    font-style: italic; font-size: 30px; font-weight: 500;
+  }
+  .viewer-card.alt .viewer-icon { background: var(--oxblood); color: var(--parchment); }
+  .viewer-card.alt2 .viewer-icon { background: var(--teal); color: var(--parchment); }
+  .viewer-card.alt3 .viewer-icon { background: var(--gold); color: var(--ink); }
+  .viewer-body h4 {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600;
+    font-size: 22px; color: var(--ink); margin-bottom: 4px;
+  }
+  .viewer-body .vt {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--oxblood); margin-bottom: 10px;
+  }
+  .viewer-body p {
+    font-family: 'Inter', sans-serif; font-size: 12.5px;
+    color: var(--ink-soft); line-height: 1.55;
+  }
+
+  /* ============ SLIDE 16 — Lodovico features ============ */
+  .feat-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 30px; margin-top: 24px; flex: 1;
+  }
+  .feat-card {
+    background: rgba(255,255,255,0.4); border: 1px solid var(--rule);
+    padding: 26px; border-radius: 4px; position: relative;
+    overflow: hidden;
+  }
+  .feat-card .fnum {
+    position: absolute; top: 14px; right: 18px;
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 60px; color: var(--rule); line-height: 1;
+    opacity: 0.6;
+  }
+  .feat-card h4 {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600;
+    font-size: 24px; color: var(--ink); margin-bottom: 8px;
+  }
+  .feat-card h4 em { color: var(--oxblood); font-style: italic; }
+  .feat-card p {
+    font-family: 'Inter', sans-serif; font-size: 13px;
+    color: var(--ink-soft); line-height: 1.55;
+  }
+
+  /* ============ SLIDE 17 — Demo screenshot ============ */
+  .demo-stage {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    margin-top: 20px;
+  }
+  .demo-svg { width: 100%; max-width: 1100px; height: auto; }
+
+  /* ============ SLIDE 18 — World institutions ============ */
+  .inst-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 16px; margin-top: 28px; flex: 1;
+    align-content: center;
+  }
+  .inst-card {
+    border: 1px solid var(--rule); padding: 18px 16px;
+    background: rgba(255,255,255,0.4);
+    border-radius: 4px; text-align: center;
+    aspect-ratio: 1.1;
+    display: flex; flex-direction: column; justify-content: center;
+    align-items: center;
+    transition: transform 0.2s;
+  }
+  .inst-card .ic-name {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 18px; color: var(--ink); line-height: 1.15;
+    margin-bottom: 8px;
+  }
+  .inst-card .ic-loc {
+    font-family: 'Inter', sans-serif; font-size: 9px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--oxblood);
+  }
+  .inst-card .ic-flag {
+    font-size: 24px; margin-bottom: 8px;
+  }
+
+  /* ============ SLIDE 19 — Drag and drop manifests ============ */
+  .dnd-stage {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    margin-top: 20px;
+  }
+  .dnd-svg { width: 100%; max-width: 1000px; height: auto; }
+
+  /* ============ SLIDE 20 — Global community ============ */
+  .global-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 50px; margin-top: 30px; flex: 1; align-items: center;
+  }
+  .timeline {
+    position: relative;
+  }
+  .timeline::before {
+    content: ''; position: absolute; left: 70px; top: 10px; bottom: 10px;
+    width: 2px; background: var(--rule);
+  }
+  .tl-item {
+    display: flex; gap: 20px; margin-bottom: 20px;
+    align-items: flex-start;
+  }
+  .tl-year {
+    flex: 0 0 60px;
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-weight: 600; font-size: 22px;
+    color: var(--oxblood); text-align: right;
+  }
+  .tl-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--parchment); border: 2px solid var(--oxblood);
+    margin-top: 8px; flex: 0 0 14px; z-index: 1;
+  }
+  .tl-text {
+    flex: 1; padding-top: 4px;
+    font-family: 'Inter', sans-serif; font-size: 13px;
+    color: var(--ink-soft); line-height: 1.5;
+  }
+  .tl-text strong { color: var(--ink); }
+
+  /* ============ SLIDE 21 — Use cases ============ */
+  .uc-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 20px; margin-top: 24px; flex: 1;
+  }
+  .uc-card {
+    border: 1px solid var(--rule); border-radius: 4px;
+    padding: 22px; background: rgba(255,255,255,0.35);
+    display: flex; flex-direction: column;
+  }
+  .uc-tag {
+    display: inline-block; padding: 3px 10px;
+    background: var(--oxblood); color: var(--parchment);
+    font-family: 'Inter', sans-serif; font-size: 9px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    font-weight: 600; border-radius: 2px;
+    align-self: flex-start; margin-bottom: 10px;
+  }
+  .uc-card.gold .uc-tag { background: var(--gold); color: var(--ink); }
+  .uc-card.teal .uc-tag { background: var(--teal); }
+  .uc-card.dark .uc-tag { background: var(--ink); }
+  .uc-card h4 {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 22px; color: var(--ink); margin-bottom: 8px;
+  }
+  .uc-card p {
+    font-family: 'Inter', sans-serif; font-size: 12px;
+    color: var(--ink-soft); line-height: 1.5; flex: 1;
+  }
+  .uc-card .uc-quote {
+    margin-top: 14px; padding-top: 12px;
+    border-top: 1px dashed var(--rule);
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 13px; color: var(--ink);
+  }
+
+  /* ============ SLIDE 22 — Open access ============ */
+  .open-content {
+    display: flex; flex-direction: column;
+    flex: 1; justify-content: center; max-width: 1100px;
+  }
+  .open-stat {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 30px; margin-top: 40px;
+  }
+  .os-card {
+    text-align: center;
+  }
+  .os-card .icon {
+    font-family: 'Cormorant Garamond', serif; font-size: 56px;
+    font-style: italic; color: var(--oxblood); line-height: 1;
+    margin-bottom: 16px;
+  }
+  .os-card h4 {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600;
+    font-size: 20px; color: var(--ink); margin-bottom: 8px;
+    font-style: italic;
+  }
+  .os-card p {
+    font-family: 'Inter', sans-serif; font-size: 13px;
+    color: var(--ink-soft); line-height: 1.5;
+  }
+
+  /* ============ SLIDE 23 — Discussion prompts ============ */
+  .prompts-list {
+    list-style: none; flex: 1; display: flex; flex-direction: column;
+    justify-content: center; gap: 22px; max-width: 1000px;
+  }
+  .prompts-list li {
+    display: flex; gap: 22px; align-items: flex-start;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .prompts-list li:last-child { border-bottom: none; }
+  .pr-num {
+    flex: 0 0 56px;
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 56px; color: var(--gold); line-height: 0.9;
+  }
+  .pr-text {
+    flex: 1; padding-top: 8px;
+  }
+  .pr-text .pr-q {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500;
+    font-size: 26px; color: var(--ink); line-height: 1.25;
+    margin-bottom: 6px;
+  }
+  .pr-text .pr-q em { font-style: italic; color: var(--oxblood); }
+  .pr-text .pr-hint {
+    font-family: 'Inter', sans-serif; font-size: 12px;
+    color: var(--ink-soft); line-height: 1.4; font-style: italic;
+  }
+
+  /* ============ SLIDE 24 — Closing ============ */
+  .s24 { padding: 0; }
+  .s24-inner {
+    position: absolute; inset: 80px 110px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    z-index: 3;
+  }
+  .s24-thanks {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 130px; line-height: 1;
+    color: var(--ink);
+  }
+  .s24-thanks em {
+    font-style: italic; color: var(--oxblood);
+  }
+  .s24-resources {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 36px; margin-top: 40px;
+  }
+  .s24-block h4 {
+    font-family: 'Inter', sans-serif; font-size: 11px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--oxblood); font-weight: 600; margin-bottom: 14px;
+    border-bottom: 1px solid var(--rule); padding-bottom: 8px;
+  }
+  .s24-block p, .s24-block li {
+    font-family: 'Inter', sans-serif; font-size: 13px;
+    color: var(--ink-soft); line-height: 1.6;
+  }
+  .s24-block ul { list-style: none; }
+  .s24-block li { padding: 3px 0; }
+  .s24-block li::before { content: '— '; color: var(--gold); }
+  .s24-block code {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--oxblood);
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- ===================== SLIDE 1 — TITLE ===================== -->
+<section class="slide s1 active" data-slide="1">
+  <div class="folio outer"></div>
+  <div class="folio inner"></div>
+  <div class="s1-flourish"></div>
+  <div class="s1-inner">
+    <div class="s1-top">
+      <div class="s1-meta">
+        <div>Centro DHMoRe · Università di Modena e Reggio Emilia</div>
+      </div>
+      <div class="s1-mark">
+      </div>
+    </div>
+
+    <div class="s1-center">
+      <div class="s1-pretitle">— Digital City Heritage —</div>
+      <h1 class="title-main">FG2<br><em>Interoperabilità</em></h1>
+      <div class="s1-subtitle">
+        IIIF, Manifest, immagini in altissima definizione e archivi che<br>finalmente si parlano.
+      </div>
+    </div>
+
+    <div class="s1-bottom">
+      <div class="s1-tagline">
+        Silvia Cascianelli<br>Carmine Zaccagnino
+      </div>
+
+      
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SLIDE 2 — AGENDA ===================== -->
+<section class="slide" data-slide="2">
+  <div class="top-label">
+    <span class="brand">Interoperabilità</span>
+    <span class="num">02 / 24</span>
+  </div>
+  <h3 class="sub">— Programma dei lavori —</h3>
+  <h2 class="slide-h"><span class="ornament">§</span>Cosa <em>esploreremo</em> insieme</h2>
+
+  <div class="agenda-grid">
+    <div class="agenda-item">
+      <div class="agenda-num">i.</div>
+      <div class="agenda-text">
+        <div class="agenda-title">Il problema del patrimonio digitale frammentato</div>
+        <div class="agenda-time">5 min · introduzione</div>
+      </div>
+    </div>
+    <div class="agenda-item">
+      <div class="agenda-num">ii.</div>
+      <div class="agenda-text">
+        <div class="agenda-title">Lodovico: cos'è, chi lo fa, cosa contiene</div>
+        <div class="agenda-time">10 min · panoramica</div>
+      </div>
+    </div>
+    <div class="agenda-item">
+      <div class="agenda-num">iii.</div>
+      <div class="agenda-text">
+        <div class="agenda-title">IIIF — il framework che rende possibile tutto</div>
+        <div class="agenda-time">10 min · le quattro API</div>
+      </div>
+    </div>
+    <div class="agenda-item">
+      <div class="agenda-num">iv.</div>
+      <div class="agenda-text">
+        <div class="agenda-title">Anatomia di un manifesto</div>
+        <div class="agenda-time">10 min · JSON live</div>
+      </div>
+    </div>
+    <div class="agenda-item">
+      <div class="agenda-num">v.</div>
+      <div class="agenda-text">
+        <div class="agenda-title">Il dialogo con Vaticana, BnF, British Library…</div>
+        <div class="agenda-time">10 min · interoperabilità globale</div>
+      </div>
+    </div>
+    <div class="agenda-item">
+      <div class="agenda-num">vi.</div>
+      <div class="agenda-text">
+        <div class="agenda-title">Demo dal vivo + casi d'uso</div>
+        <div class="agenda-time">10 min · zoom, annotazioni, confronti</div>
+      </div>
+    </div>
+    <div class="agenda-item">
+      <div class="agenda-num">vii.</div>
+      <div class="agenda-text">
+        <div class="agenda-title">Discussione aperta</div>
+        <div class="agenda-time">15 min · domande &amp; spunti</div>
+      </div>
+    </div>
+    <div class="agenda-item">
+      <div class="agenda-num">✦</div>
+      <div class="agenda-text">
+        <div class="agenda-title">In totale</div>
+        <div class="agenda-time">circa 60 minuti</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">
+    <!-- <span>DHMoRe · UNIMORE</span> -->
+    <span>lodovico.medialibrary.it</span>
+  </div>
+</section>
+
+<!-- ===================== SLIDE 3 — THE PROBLEM ===================== -->
+<section class="slide s3" data-slide="3">
+  <div class="top-label">
+    <span class="brand">Premessa</span>
+    <span class="num">03 / 24</span>
+  </div>
+  <div class="s3-left">
+    <h3 class="sub">— Il punto di partenza —</h3>
+    <h2 class="slide-h">Ogni archivio è un'<em>isola</em>.</h2>
+    <p class="lead">
+      Una pergamena modenese, un manoscritto vaticano, una stampa parigina:
+      digitalizzati su <em>cinque piattaforme diverse</em>, con <em>cinque visualizzatori</em>,
+      <em>cinque metadati</em>, <em>cinque licenze</em>.
+    </p>
+    <ul class="pain-list">
+      <li>URL diversi, formati diversi, qualità diverse</li>
+      <li>Niente confronto fianco-a-fianco</li>
+      <li>Annotazioni perse al cambio di sito</li>
+      <li>Zoom limitato, immagini di bassa risoluzione</li>
+    </ul>
+  </div>
+  <div class="s3-right">
+    <div class="silos">
+      <div class="silo s-a">Biblioteca<br>Estense</div>
+      <div class="silo s-b">Vaticana</div>
+      <div class="silo s-c">Archivio<br>di Stato</div>
+      <div class="silo s-d">Bodleian</div>
+      <div class="silo s-e">Getty</div>
+      <div class="x">≠</div>
+    </div>
+  </div>
+  <div class="foot">
+    <!-- <span>Il patrimonio digitale frammentato</span> -->
+    <!-- <span>Premessa</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 4 — WHAT IS LODOVICO ===================== -->
+<section class="slide" data-slide="4">
+  <div class="top-label">
+    <span class="brand">Lodovico</span>
+    <span class="num">04 / 24</span>
+  </div>
+  <!-- <div class="quote-mark">L</div> -->
+  <div class="s4-content">
+    <h3 class="sub">— Cos'è —</h3>
+    <h2 class="slide-h">Una <em>piattaforma</em> per il patrimonio<br>di archivi, biblioteche e musei.</h2>
+    <p class="lead">
+      Sviluppata dal Centro Interdipartimentale di Ricerca sulle Digital Humanities
+      (<strong>DHMoRe</strong>) dell'Università di Modena e Reggio Emilia, in collaborazione
+      con le Università di Bologna e Parma. Afferisce al sistema MLOL.
+    </p>
+
+    <div class="ornament-rule">✦</div>
+
+    <div class="pillars">
+      <div class="pillar">
+        <h4>Interattiva</h4>
+        <p>Gli utenti non solo guardano: zoomano, annotano, ritagliano, confrontano e creano percorsi personalizzati di ricerca e didattica.</p>
+      </div>
+      <div class="pillar">
+        <h4>Aperta</h4>
+        <p>Accesso libero e gratuito al patrimonio digitalizzato. Le collezioni dialogano con quelle Open di tutto il mondo.</p>
+      </div>
+      <div class="pillar">
+        <h4>Trasversale</h4>
+        <p>Un'unica piattaforma multi-tenant ospita istituti diversi mantenendoli distinti ma comunicanti tra loro.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot">
+    <!-- <span>DHMoRe — Centro Interdipartimentale Digital Humanities</span> -->
+    <!-- <span>UNIMORE · UNIBO · UNIPR</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 5 — IN NUMBERS ===================== -->
+<section class="slide" data-slide="5">
+  <div class="top-label">
+    <span class="brand">Lodovico in cifre</span>
+    <span class="num">05 / 24</span>
+  </div>
+  <h3 class="sub">— Il patrimonio aggregato —</h3>
+  <h2 class="slide-h">Lodovico in <em>numeri</em>.</h2>
+
+  <div class="nums-grid">
+    <div class="num-card">
+      <div class="big">50+</div>
+      <div class="lab">Istituti aderenti</div>
+    </div>
+    <div class="num-card">
+      <div class="big">9</div>
+      <div class="lab">Province coinvolte</div>
+    </div>
+    <div class="num-card">
+      <div class="big">120+</div>
+      <div class="lab">Collezioni digitali</div>
+    </div>
+    <div class="num-card">
+      <div class="big">∞</div>
+      <div class="lab">Manifesti IIIF interrogabili</div>
+    </div>
+  </div>
+
+  <div class="nums-detail">
+    <div>
+      <h4>Tipologie di istituti</h4>
+      <ul>
+        <li>Archivi di Stato (Modena, Parma, Piacenza, Ferrara, Forlì-Cesena, Rimini)</li>
+        <li>Archivi capitolari e diocesani (S. Antonino, Cattedrale Reggio, Bobbio, Ravenna…)</li>
+        <li>Biblioteche civiche, universitarie e capitolari</li>
+        <li>Fondazioni bancarie e museali (BPER, Cariparma, UniCredit, Guatelli, MAXXI…)</li>
+        <li>Università e centri di ricerca</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Esempi di contenuti</h4>
+      <ul>
+        <li>Lettere di Lucrezia Borgia</li>
+        <li>Manoscritti di Lazzaro Spallanzani</li>
+        <li>Erbari rinascimentali</li>
+        <li>Pergamene e diplomatici medievali</li>
+        <li>Fotografie della Liberazione</li>
+        <li>Frammenti ebraici recuperati da legature</li>
+        <li>Carteggio Turati-Kuliscioff</li>
+        <li>Codice diplomatico pomposiano</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Dati aggiornati al 2026</span>
+    <!-- <span>fonte: lodovico.medialibrary.it</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 6 — MULTI-TENANT ARCHITECTURE ===================== -->
+<section class="slide" data-slide="6">
+  <div class="top-label">
+    <span class="brand">Architettura</span>
+    <span class="num">06 / 24</span>
+  </div>
+  <h3 class="sub">— Come funziona —</h3>
+  <h2 class="slide-h">Una piattaforma <em>multi-tenant</em>.</h2>
+  <p class="lead">
+    Ogni istituto ha il proprio "spazio" digitale, con interfaccia personalizzabile.
+    Dati separati informaticamente, ma <strong>interoperabili</strong>: gli utenti accedono con un solo account
+    a tutto il patrimonio aggregato.
+  </p>
+
+  <div class="arch-wrap">
+    <svg class="arch-svg" viewBox="0 0 1000 460" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="dot" width="10" height="10" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="2" r="0.6" fill="#3a2f24" opacity="0.3"/>
+        </pattern>
+      </defs>
+
+      <!-- Tenant boxes (top row) -->
+      <g font-family="Cormorant Garamond, serif" font-style="italic">
+        <g transform="translate(40,30)">
+          <rect width="160" height="100" rx="4" fill="#e8dcc1" stroke="#3a2f24" stroke-width="1.2"/>
+          <rect x="0" y="0" width="160" height="6" fill="#6b1f1f"/>
+          <text x="80" y="40" text-anchor="middle" font-size="14" fill="#1a1410">Archivio di Stato</text>
+          <text x="80" y="58" text-anchor="middle" font-size="14" fill="#1a1410">di Modena</text>
+          <text x="80" y="80" text-anchor="middle" font-family="Inter, sans-serif" font-style="normal" font-size="9" letter-spacing="2" fill="#6b1f1f">TENANT 01</text>
+        </g>
+        <g transform="translate(220,30)">
+          <rect width="160" height="100" rx="4" fill="#e8dcc1" stroke="#3a2f24" stroke-width="1.2"/>
+          <rect x="0" y="0" width="160" height="6" fill="#b08c3a"/>
+          <text x="80" y="40" text-anchor="middle" font-size="14" fill="#1a1410">Biblioteca</text>
+          <text x="80" y="58" text-anchor="middle" font-size="14" fill="#1a1410">Estense</text>
+          <text x="80" y="80" text-anchor="middle" font-family="Inter, sans-serif" font-style="normal" font-size="9" letter-spacing="2" fill="#6b1f1f">TENANT 02</text>
+        </g>
+        <g transform="translate(400,30)">
+          <rect width="160" height="100" rx="4" fill="#e8dcc1" stroke="#3a2f24" stroke-width="1.2"/>
+          <rect x="0" y="0" width="160" height="6" fill="#1f5d5d"/>
+          <text x="80" y="40" text-anchor="middle" font-size="14" fill="#1a1410">Centro Doc.</text>
+          <text x="80" y="58" text-anchor="middle" font-size="14" fill="#1a1410">Donna</text>
+          <text x="80" y="80" text-anchor="middle" font-family="Inter, sans-serif" font-style="normal" font-size="9" letter-spacing="2" fill="#6b1f1f">TENANT 03</text>
+        </g>
+        <g transform="translate(580,30)">
+          <rect width="160" height="100" rx="4" fill="#e8dcc1" stroke="#3a2f24" stroke-width="1.2"/>
+          <rect x="0" y="0" width="160" height="6" fill="#6b1f1f"/>
+          <text x="80" y="40" text-anchor="middle" font-size="14" fill="#1a1410">Fondazione</text>
+          <text x="80" y="58" text-anchor="middle" font-size="14" fill="#1a1410">Cariparma</text>
+          <text x="80" y="80" text-anchor="middle" font-family="Inter, sans-serif" font-style="normal" font-size="9" letter-spacing="2" fill="#6b1f1f">TENANT 04</text>
+        </g>
+        <g transform="translate(760,30)">
+          <rect width="200" height="100" rx="4" fill="#e8dcc1" stroke="#3a2f24" stroke-width="1.2" stroke-dasharray="4,3"/>
+          <text x="100" y="48" text-anchor="middle" font-size="14" fill="#3a2f24">…50+ istituti</text>
+          <text x="100" y="68" text-anchor="middle" font-size="14" fill="#3a2f24">aderenti</text>
+          <text x="100" y="86" text-anchor="middle" font-family="Inter, sans-serif" font-style="normal" font-size="9" letter-spacing="2" fill="#6b1f1f">TENANT N</text>
+        </g>
+      </g>
+
+      <!-- Connecting lines -->
+      <g stroke="#b8a685" stroke-width="1.5" fill="none">
+        <path d="M 120 130 L 120 180 L 500 180 L 500 220"/>
+        <path d="M 300 130 L 300 180"/>
+        <path d="M 480 130 L 480 180"/>
+        <path d="M 660 130 L 660 180 L 500 180"/>
+        <path d="M 860 130 L 860 180 L 500 180"/>
+      </g>
+
+      <!-- Lodovico core layer -->
+      <g transform="translate(160,220)">
+        <rect width="680" height="80" rx="6" fill="#1a1410" />
+        <rect width="680" height="80" rx="6" fill="url(#dot)"/>
+        <text x="340" y="40" text-anchor="middle" font-family="Cormorant Garamond, serif" font-style="italic" font-size="28" fill="#d9b96a">Lodovico</text>
+        <text x="340" y="62" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" letter-spacing="3" fill="#f3ead8" opacity="0.7">PIATTAFORMA · STANDARD CONDIVISI · IIIF</text>
+      </g>
+
+      <!-- IIIF emanation arrows -->
+      <g stroke="#6b1f1f" stroke-width="1.5" fill="none" marker-end="url(#arr)">
+        <path d="M 250 300 L 250 340"/>
+        <path d="M 500 300 L 500 340"/>
+        <path d="M 750 300 L 750 340"/>
+      </g>
+      <defs>
+        <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+          <path d="M0,0 L8,5 L0,10 Z" fill="#6b1f1f"/>
+        </marker>
+      </defs>
+
+      <!-- User clients -->
+      <g font-family="Cormorant Garamond, serif" font-style="italic">
+        <g transform="translate(160,350)">
+          <rect width="180" height="80" rx="4" fill="#f3ead8" stroke="#6b1f1f" stroke-width="1.5"/>
+          <text x="90" y="35" text-anchor="middle" font-size="16" fill="#1a1410">Browser</text>
+          <text x="90" y="58" text-anchor="middle" font-family="Inter, sans-serif" font-style="normal" font-size="10" fill="#3a2f24">Studiosi · Studenti</text>
+        </g>
+        <g transform="translate(410,350)">
+          <rect width="180" height="80" rx="4" fill="#f3ead8" stroke="#6b1f1f" stroke-width="1.5"/>
+          <text x="90" y="35" text-anchor="middle" font-size="16" fill="#1a1410">Mirador</text>
+          <text x="90" y="58" text-anchor="middle" font-family="Inter, sans-serif" font-style="normal" font-size="10" fill="#3a2f24">IIIF Viewer esterni</text>
+        </g>
+        <g transform="translate(660,350)">
+          <rect width="180" height="80" rx="4" fill="#f3ead8" stroke="#6b1f1f" stroke-width="1.5"/>
+          <text x="90" y="35" text-anchor="middle" font-size="16" fill="#1a1410">Aggregatori</text>
+          <text x="90" y="58" text-anchor="middle" font-family="Inter, sans-serif" font-style="normal" font-size="10" fill="#3a2f24">Indici globali, API</text>
+        </g>
+      </g>
+
+      <!-- Side label -->
+      <text x="20" y="76" font-family="Inter, sans-serif" font-size="10" letter-spacing="3" fill="#6b1f1f" font-weight="600" transform="rotate(-90 20 76)">TENANT</text>
+      <text x="20" y="270" font-family="Inter, sans-serif" font-size="10" letter-spacing="3" fill="#6b1f1f" font-weight="600" transform="rotate(-90 20 270)">CORE</text>
+      <text x="20" y="395" font-family="Inter, sans-serif" font-size="10" letter-spacing="3" fill="#6b1f1f" font-weight="600" transform="rotate(-90 20 395)">CLIENT</text>
+    </svg>
+  </div>
+
+  <div class="foot">
+    <!-- <span>Dati distinti, esperienza unificata</span> -->
+    <!-- <span>Architettura</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 7 — HOMEPAGE TOUR ===================== -->
+<section class="slide s7" data-slide="7">
+  <div class="top-label">
+    <span class="brand">L'interfaccia</span>
+    <span class="num">07 / 24</span>
+  </div>
+  <div class="s7-left">
+    <h3 class="sub">— La home —</h3>
+    <h2 class="slide-h">Uno <em>sguardo</em> guidato.</h2>
+    <p class="lead">La più grande raccolta di prestito digitale per le biblioteche italiane.</p>
+    
+    <ol class="annot-list">
+      <li>
+        <div class="annot-num">1</div>
+        <div class="annot-text"><strong>Logo &amp; Nav</strong> — Home, Esplora, Collezioni Digitali, Mappa, Login federato (SPID/CIE/Shibboleth)</div>
+      </li>
+      <li>
+        <div class="annot-num">2</div>
+        <div class="annot-text"><strong>Search bar avanzata</strong> — ricerca su 12+ campi e nel testo OCR di alcune collezioni</div>
+      </li>
+      <!-- <li>
+        <div class="annot-num">3</div>
+        <div class="annot-text"><strong>Hero claim</strong> — </div>
+      </li> -->
+      <li>
+        <div class="annot-num">3</div>
+        <div class="annot-text"><strong>Quattro entry-point</strong> visivi: Cos'è, Collezioni, Storie, Mappa interattiva</div>
+      </li>
+    </ol>
+  </div>
+  <div class="s7-right">
+    <div>
+      <img style="width: 600px;" src="home_lodovico.png"></img>
+      <img style="width: 600px;margin-left: 5px;" src="catalogo_lodovico.png"></img>
+    </div>
+    <!-- <div class="browser-mock">
+      <div class="browser-bar">
+        <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div class="url">https://lodovico.medialibrary.it</div>
+      </div>
+      <div class="lodovico-page">
+        <div class="lp-header">
+          <span class="lp-logo">Lodovico</span>
+          <div class="lp-nav">
+            <span>HOME</span><span>ESPLORA</span><span>COLLEZIONI</span><span>MAPPA</span><span>LOGIN</span>
+          </div>
+        </div>
+        <div class="lp-hero">
+          <div class="lp-pretitle">— Patrimonio digitalizzato —</div>
+          <div class="lp-title">Lodovico</div>
+          <div class="lp-sub">La piattaforma di prestito digitale con la più grande collezione di contenuti per tutte le biblioteche italiane</div>
+          <div class="lp-cta">Esplora il catalogo →</div>
+        </div>
+        <div class="lp-tiles">
+          <div class="lp-tile">Cos'è<br>Lodovico</div>
+          <div class="lp-tile">Collezioni<br>Digitali</div>
+          <div class="lp-tile">Storie<br>MLOL</div>
+          <div class="lp-tile">Trova nella<br>Mappa</div>
+        </div>
+      </div>
+    </div> -->
+  </div>
+  <div class="foot">
+    <!-- <span>Riproduzione fedele dell'interfaccia ufficiale</span> -->
+    <span>lodovico.medialibrary.it</span>
+  </div>
+</section>
+
+<!-- ===================== SLIDE 8 — COLLECTIONS ===================== -->
+<section class="slide" data-slide="8">
+  <div class="top-label">
+    <span class="brand">Cosa c'è dentro</span>
+    <span class="num">08 / 24</span>
+  </div>
+  <h3 class="sub">— Le collezioni digitali —</h3>
+  <h2 class="slide-h">Un <em>ecosistema</em> di patrimoni eterogenei.</h2>
+
+  <div class="coll-grid">
+    <div class="coll-card">
+      <div class="glyph">𝔄</div>
+      <h4>Archivi</h4>
+      <p>Pergamene, registri, carteggi, processi inquisitoriali, archivi privati e bancari.</p>
+      <ul>
+        <li>Lettere di Lucrezia Borgia</li>
+        <li>Inquisizione di Modena</li>
+        <li>Carte Turati-Kuliscioff</li>
+        <li>Diplomatici medievali</li>
+      </ul>
+    </div>
+    <div class="coll-card gold">
+      <div class="glyph">𝔅</div>
+      <h4>Biblioteche</h4>
+      <p>Manoscritti, incunaboli, edizioni antiche, fondi musicali, autografi.</p>
+      <ul>
+        <li>Manoscritti Spallanzani</li>
+        <li>Volumi antichi Reggio E.</li>
+        <li>Autografoteca Campori</li>
+        <li>Edizioni piacentine antiche</li>
+      </ul>
+    </div>
+    <div class="coll-card teal">
+      <div class="glyph">𝔐</div>
+      <h4>Musei &amp; Centri</h4>
+      <p>Patrimonio storico-artistico, fotografie, manifesti, raccolte tematiche.</p>
+      <ul>
+        <li>Medagliere Rangoni</li>
+        <li>Fotografie della Liberazione</li>
+        <li>Erbari di Zaccaria da Piacenza</li>
+        <li>Patrimonio Collegio Alberoni</li>
+      </ul>
+    </div>
+    <div class="coll-card">
+      <div class="glyph">✦</div>
+      <h4>Collezioni speciali</h4>
+      <p>Progetti di ricerca curati direttamente dal DHMoRe, spesso con valore scientifico.</p>
+      <ul>
+        <li>Atlante diplomatico del sec. X</li>
+        <li>Codice diplomatico pomposiano</li>
+        <li>Frammenti ebraici piacentini</li>
+        <li>Progetto "Trasfor_MO"</li>
+      </ul>
+    </div>
+    <div class="coll-card gold">
+      <div class="glyph">⏵</div>
+      <h4>Memorie audiovisive</h4>
+      <p>Interviste e testimonianze orali su nastro magnetico digitalizzato.</p>
+      <ul>
+        <li>Interviste ai partigiani</li>
+        <li>Interviste ai deportati</li>
+        <li>Interviste IMI (internati)</li>
+        <li>"Io c'ero" (donne protagoniste)</li>
+      </ul>
+    </div>
+    <div class="coll-card teal">
+      <div class="glyph">𝔇</div>
+      <h4>Documenti del '900</h4>
+      <p>La storia recente attraverso archivi politici, sindacali, sociali.</p>
+      <ul>
+        <li>Manifesti DC, UDI, CGIL</li>
+        <li>Bandiere CGIL Modena</li>
+        <li>Persecuzione antiebraica</li>
+        <li>Comitati di Liberazione</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <!-- <span>Patrimonio frammentato → patrimonio aggregato</span> -->
+    <!-- <span>Collezioni Digitali</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 9 — WHAT IS IIIF ===================== -->
+<section class="slide s9" data-slide="9">
+  <div class="top-label">
+    <span class="brand">IIIF · Origins</span>
+    <span class="num">09 / 24</span>
+  </div>
+  <div class="s9-left">
+    <h3 class="sub">— La tecnologia abilitante —</h3>
+    <h2 class="slide-h">Cos'è l'<em>IIIF</em>?</h2>
+    <p class="lead">
+      <strong>I</strong>nternational <strong>I</strong>mage <strong>I</strong>nteroperability
+      <strong>F</strong>ramework — un insieme di standard aperti per consegnare,
+      visualizzare e annotare immagini digitali ad altissima qualità su scala globale.
+    </p>
+    <p class="body" style="margin-top:18px;">
+      Nato nel 2011 da una collaborazione tra Stanford, British Library, Bodleian, Bibliothèque Nationale
+      de France, Vaticana e altri grandi attori, IIIF è oggi <strong>lo standard de facto</strong>
+      per il patrimonio culturale digitalizzato.
+    </p>
+    <div class="iiif-stat">
+      <div class="it"><strong>2011</strong><span>fondazione</span></div>
+      <div class="it"><strong>200+</strong><span>istituti membri</span></div>
+      <div class="it"><strong>1B+</strong><span>immagini servite</span></div>
+    </div>
+  </div>
+  <div class="s9-right">
+    <img style="width: 500px;" src="iif_logo.png" />
+  </div>
+  <div class="foot">
+    <span>iiif.io</span>
+    <!-- <span>standard aperti, governance comunitaria</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 10 — THE FOUR APIs ===================== -->
+<section class="slide" data-slide="10">
+  <div class="top-label">
+    <span class="brand">Le specifiche</span>
+    <span class="num">10 / 24</span>
+  </div>
+  <h3 class="sub">— Il framework in quattro parti —</h3>
+  <h2 class="slide-h">Le <em>quattro</em> API di IIIF.</h2>
+  <p class="body" style="font-size:14px; max-width:880px;">
+    IIIF è un set di specifiche modulari. Ogni API risolve un problema preciso, e le
+    implementazioni possono adottarne una, due, tre o tutte e quattro.
+  </p>
+
+  <div class="api-grid">
+    <div class="api-card">
+      <div class="api-num">i.</div>
+      <h4>Image API</h4>
+      <div class="api-en">Image API · v3.0</div>
+      <p>Definisce un servizio web per richiedere ritagli, scalature, rotazioni e formati di un'immagine via URL standard. È la base: <em>chiedi l'URL, ottieni i pixel</em>.</p>
+      <!-- <div class="pillar-tag">★ Fondamentale</div> -->
+    </div>
+    <div class="api-card">
+      <div class="api-num">ii.</div>
+      <h4>Presentation API</h4>
+      <div class="api-en">Presentation API · v3.0</div>
+      <p>Descrive un oggetto digitale composto: il <strong>manifesto</strong>. Pagine, ordine, metadati, annotazioni, audio, video — tutto in un JSON-LD strutturato.</p>
+      <!-- <div class="pillar-tag">★ Il cuore di Lodovico</div> -->
+    </div>
+    <div class="api-card">
+      <div class="api-num">iii.</div>
+      <h4>Content Search API</h4>
+      <div class="api-en">Content Search · v2.0</div>
+      <p>Permette di cercare nel testo OCR delle pagine e tornare risultati con coordinate precise sui pixel — il viewer evidenzia direttamente.</p>
+      <!-- <div class="pillar-tag">Avanzata</div> -->
+    </div>
+    <div class="api-card">
+      <div class="api-num">iv.</div>
+      <h4>Authentication API</h4>
+      <div class="api-en">Authentication · v2.0</div>
+      <p>Gestisce contenuti riservati, permette diversi livelli di autenticazione, dall'anteprima libera all'accesso totale autenticato (es. SPID, Shibboleth, OAuth).</p>
+      <!-- <div class="pillar-tag">Riservato</div> -->
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>iiif.io/api</span>
+    <span>specifiche pubbliche · CC-BY</span>
+  </div>
+</section>
+
+<!-- ===================== SLIDE 11 — IMAGE API URL ===================== -->
+<section class="slide" data-slide="11">
+  <div class="top-label">
+    <span class="brand">Image API in pratica</span>
+    <span class="num">11 / 24</span>
+  </div>
+  <h3 class="sub">— Anatomia di un URL IIIF —</h3>
+  <h2 class="slide-h">Un solo URL, <em>infinite</em> immagini.</h2>
+
+  <div class="url-decoder">
+    <div class="url-line">
+      <span class="seg seg-base">https://images.example.org/iiif</span><span class="seg jp">/</span><span class="seg seg-id">manuscript-12</span><span class="seg jp">/</span><span class="seg seg-region">125,15,800,1100</span><span class="seg jp">/</span><span class="seg seg-size">600,</span><span class="seg jp">/</span><span class="seg seg-rot">0</span><span class="seg jp">/</span><span class="seg seg-qual">default.jpg</span>
+    </div>
+    <div class="url-legend">
+      <div class="lg-item" style="border-color:#fde7b4;">
+        <strong>{scheme}</strong>
+        <span>Server IIIF base</span>
+      </div>
+      <div class="lg-item" style="border-color:#a8d8d8;">
+        <strong>{identifier}</strong>
+        <span>ID dell'immagine</span>
+      </div>
+      <div class="lg-item" style="border-color:#f8e4a8;">
+        <strong>{region}</strong>
+        <span>Ritaglio (x,y,w,h) o full</span>
+      </div>
+      <div class="lg-item" style="border-color:#f8b8b8;">
+        <strong>{size}</strong>
+        <span>Dimensioni in pixel</span>
+      </div>
+      <div class="lg-item" style="border-color:#ffd87a;">
+        <strong>{rotation}</strong>
+        <span>Gradi di rotazione</span>
+      </div>
+      <div class="lg-item" style="border-color:#c8e0c8;">
+        <strong>{quality.format}</strong>
+        <span>color, gray, bitonal · jpg, png, tif</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="examples-row">
+    <div class="ex-card">
+      <div class="ex-tag">Immagine intera, 800px</div>
+      <code>/full/800,/0/default.jpg</code>
+    </div>
+    <div class="ex-card">
+      <div class="ex-tag">Ritaglio iniziale capolettera</div>
+      <code>/100,200,400,400/full/0/default.jpg</code>
+    </div>
+    <div class="ex-card">
+      <div class="ex-tag">Bianco e nero, ruotato 90°</div>
+      <code>/full/full/90/bitonal.png</code>
+    </div>
+  </div>
+
+  <p class="body" style="margin-top:22px; font-style:italic; color:var(--ink);">
+    → Il <strong>deep zoom</strong> dei manoscritti su Lodovico funziona richiedendo "tessere" (tile) successive
+    a questo stesso URL: ogni livello di zoom è una nuova chiamata. Senza scaricare l'intero file ad alta risoluzione.
+  </p>
+
+  <div class="foot">
+    <!-- <span>{scheme}/{identifier}/{region}/{size}/{rotation}/{quality}.{format}</span> -->
+    <span>Image API v3.0</span>
+  </div>
+</section>
+
+<!-- ===================== SLIDE 12 — MANIFEST CONCEPT ===================== -->
+<section class="slide s12" data-slide="12">
+  <div class="top-label">
+    <span class="brand">Il manifesto</span>
+    <span class="num">12 / 24</span>
+  </div>
+  <div class="s12-left">
+    <h3 class="sub">— Presentation API · il cuore —</h3>
+    <h2 class="slide-h">Il <em>manifesto</em>:<br>l'oggetto digitale.</h2>
+
+    <div class="def-block">
+      <div class="def-term">Manifest</div>
+      <div class="def-text">
+        Un singolo file <strong>JSON-LD</strong> che descrive un oggetto digitale composto:
+        un manoscritto, una stampa, un dipinto, una fotografia, una mostra, un audiolibro.
+        Contiene tutto quello che serve a un viewer per presentarlo.
+      </div>
+    </div>
+
+    <p class="body">
+      È il "passaporto" dell'oggetto: lo prende in carico qualsiasi viewer compatibile (Mirador,
+      Universal Viewer, Clover…) e lo visualizza correttamente, in qualsiasi sito al mondo.
+    </p>
+    <p class="body" style="margin-top:14px; font-style:italic; color:var(--oxblood);">
+      → Un manifesto di Modena può essere aperto in un viewer ospitato a Parigi che mostra immagini servite da New York. È il senso stesso della parola <em>interoperability</em>.
+    </p>
+  </div>
+  <div class="s12-right">
+    <div class="manifest-pkg">
+      <div class="pkg-stamp">manifest.json</div>
+      <div class="pkg-title">Lettere di Lucrezia Borgia</div>
+      <div class="pkg-meta">Archivio di Stato di Modena · 1502</div>
+      <ul class="pkg-content">
+        <li><strong>@id</strong>https://lodovico.medialibrary.it/.../manifest</li>
+        <li><strong>label</strong>"Lettere di Lucrezia Borgia"</li>
+        <li><strong>metadata</strong>data, autore, segnatura, lingua…</li>
+        <li><strong>thumbnail</strong>copertina di anteprima</li>
+        <li><strong>items</strong>[ canvas 1, canvas 2, …, canvas N ]</li>
+        <li><strong>structures</strong>capitoli, sezioni, ranges</li>
+        <li><strong>rights</strong>licenza CC-BY · attribuzione</li>
+        <li><strong>provider</strong>DHMoRe · UNIMORE</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot">
+    <!-- <span>Un JSON che vale per tutti i viewer del mondo</span> -->
+    <span>Presentation API v3</span>
+  </div>
+</section>
+
+<!-- ===================== SLIDE 13 — REAL MANIFEST JSON ===================== -->
+<section class="slide" data-slide="13">
+  <div class="top-label">
+    <span class="brand">JSON dal vivo</span>
+    <span class="num">13 / 24</span>
+  </div>
+  <h3 class="sub">— Un manifesto reale —</h3>
+  <h2 class="slide-h">Apriamolo e <em>leggiamolo</em>.</h2>
+
+  <div class="json-wrap">
+    <pre class="json-block"><span class="jp">{</span>
+  <span class="jk">"@context"</span><span class="jp">:</span> <span class="js">"http://iiif.io/api/presentation/3/context.json"</span><span class="jp">,</span>
+  <span class="jk">"id"</span><span class="jp">:</span> <span class="js hl">"https://lodovico.medialibrary.it/.../manifest.json"</span><span class="jp">,</span>
+  <span class="jk">"type"</span><span class="jp">:</span> <span class="js">"Manifest"</span><span class="jp">,</span>
+  <span class="jk">"label"</span><span class="jp">: {</span> <span class="jk">"it"</span><span class="jp">: [</span><span class="js">"Lettere di Lucrezia Borgia"</span><span class="jp">]</span> <span class="jp">},</span>
+  <span class="jk">"metadata"</span><span class="jp">: [</span>
+    <span class="jp">{</span> <span class="jk">"label"</span><span class="jp">: {</span><span class="jk">"it"</span><span class="jp">:[</span><span class="js">"Data"</span><span class="jp">]},</span> <span class="jk">"value"</span><span class="jp">: {</span><span class="jk">"it"</span><span class="jp">:[</span><span class="js">"1502"</span><span class="jp">]} },</span>
+    <span class="jp">{</span> <span class="jk">"label"</span><span class="jp">: {</span><span class="jk">"it"</span><span class="jp">:[</span><span class="js">"Segnatura"</span><span class="jp">]},</span> <span class="jk">"value"</span><span class="jp">: {</span><span class="jk">"it"</span><span class="jp">:[</span><span class="js">"ASMo, Casa, b.131"</span><span class="jp">]} }</span>
+  <span class="jp">],</span>
+  <span class="jk">"rights"</span><span class="jp">:</span> <span class="js">"https://creativecommons.org/licenses/by/4.0/"</span><span class="jp">,</span>
+  <span class="jk">"thumbnail"</span><span class="jp">: [</span> <span class="jp">{</span> <span class="jk">"id"</span><span class="jp">:</span> <span class="js">"…/thumb.jpg"</span><span class="jp">,</span> <span class="jk">"type"</span><span class="jp">:</span> <span class="js">"Image"</span> <span class="jp">} ],</span>
+  <span class="jk">"items"</span><span class="jp">: [</span>      <span class="jc">// le pagine (canvas)</span>
+    <span class="jp">{</span>
+      <span class="jk">"id"</span><span class="jp">:</span> <span class="js">"…/canvas/p1"</span><span class="jp">,</span>
+      <span class="jk">"type"</span><span class="jp">:</span> <span class="js hl">"Canvas"</span><span class="jp">,</span>
+      <span class="jk">"height"</span><span class="jp">:</span> <span class="jn">4080</span><span class="jp">,</span> <span class="jk">"width"</span><span class="jp">:</span> <span class="jn">2720</span><span class="jp">,</span>
+      <span class="jk">"items"</span><span class="jp">: [{</span>
+        <span class="jk">"type"</span><span class="jp">:</span> <span class="js">"AnnotationPage"</span><span class="jp">,</span>
+        <span class="jk">"items"</span><span class="jp">: [{</span>
+          <span class="jk">"type"</span><span class="jp">:</span> <span class="js">"Annotation"</span><span class="jp">,</span>
+          <span class="jk">"motivation"</span><span class="jp">:</span> <span class="js">"painting"</span><span class="jp">,</span>
+          <span class="jk">"body"</span><span class="jp">: {</span>
+            <span class="jk">"id"</span><span class="jp">:</span> <span class="js">"…/full/full/0/default.jpg"</span><span class="jp">,</span>
+            <span class="jk">"type"</span><span class="jp">:</span> <span class="js">"Image"</span><span class="jp">,</span>
+            <span class="jk">"service"</span><span class="jp">: [{ </span><span class="jk">"id"</span><span class="jp">:</span><span class="js">"…/iiif/img"</span><span class="jp">,</span> <span class="jk">"type"</span><span class="jp">:</span><span class="js">"ImageService3"</span><span class="jp">}]</span>
+          <span class="jp">},</span>
+          <span class="jk">"target"</span><span class="jp">:</span> <span class="js">"…/canvas/p1"</span>
+        <span class="jp">}]</span>
+      <span class="jp">}]</span>
+    <span class="jp">},</span>
+    <span class="jc">// … altre N canvas (pagine)</span>
+  <span class="jp">]</span>
+<span class="jp">}</span></pre>
+    <div class="legend-block">
+      <div class="lb-item">
+        <div class="lb-key">@context</div>
+        <div class="lb-desc">L'URL della specifica IIIF di riferimento (qui Presentation API v3). È quel pezzo che dice ai client "questo è un manifesto IIIF".</div>
+      </div>
+      <div class="lb-item" style="border-color:#1f5d5d;">
+        <div class="lb-key">label · metadata · rights</div>
+        <div class="lb-desc">Tutto ciò che il viewer mostrerà come scheda descrittiva. <em>Multilingue nativo</em>: ogni stringa è una mappa lingua → array.</div>
+      </div>
+      <div class="lb-item" style="border-color:#6b1f1f;">
+        <div class="lb-key">items → Canvas</div>
+        <div class="lb-desc">Ogni canvas è una "pagina". Ha dimensioni indipendenti dal contenuto, fungendo da tela astratta.</div>
+      </div>
+      <div class="lb-item" style="border-color:#b08c3a;">
+        <div class="lb-key">Annotation (motivation: painting)</div>
+        <div class="lb-desc">Connette un pezzo di contenuto (immagine, audio, video) al suo canvas. È il modello del Web Annotation Working Group del W3C.</div>
+      </div>
+      <div class="lb-item" style="border-color:#3a2f24;">
+        <div class="lb-key">service: ImageService3</div>
+        <div class="lb-desc">Aggancia il deep-zoom dell'Image API. Senza questo, l'immagine sarebbe solo statica.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <!-- <span>JSON-LD valido per qualsiasi viewer IIIF compatibile</span> -->
+    <span>Presentation API v3</span>
+  </div>
+</section>
+
+<!-- ===================== SLIDE 14 — HIERARCHY ===================== -->
+<section class="slide" data-slide="14">
+  <div class="top-label">
+    <span class="brand">Modello concettuale</span>
+    <span class="num">14 / 24</span>
+  </div>
+  <h3 class="sub">— La piramide IIIF —</h3>
+  <h2 class="slide-h">Dalla <em>collezione</em> al <em>pixel</em>.</h2>
+
+  <div class="hierarchy">
+    <svg class="hier-svg" viewBox="0 0 1100 460" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrh" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+          <path d="M0,0 L8,5 L0,10 Z" fill="#6b1f1f"/>
+        </marker>
+      </defs>
+
+      <!-- Collection -->
+      <g transform="translate(50,30)">
+        <rect width="220" height="80" rx="6" fill="#1a1410"/>
+        <text x="110" y="30" text-anchor="middle" font-family="Cormorant Garamond, serif" font-style="italic" font-size="22" fill="#d9b96a">Collection</text>
+        <text x="110" y="50" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" letter-spacing="2" fill="#f3ead8" opacity="0.7">RACCOGLITORE</text>
+        <text x="110" y="68" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#f3ead8" opacity="0.6">"Tutti i manoscritti estensi"</text>
+      </g>
+
+      <!-- Manifest -->
+      <g transform="translate(330,30)">
+        <rect width="220" height="80" rx="6" fill="#6b1f1f"/>
+        <text x="110" y="30" text-anchor="middle" font-family="Cormorant Garamond, serif" font-style="italic" font-size="22" fill="#f3ead8">Manifest</text>
+        <text x="110" y="50" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" letter-spacing="2" fill="#f3ead8" opacity="0.8">L'OGGETTO</text>
+        <text x="110" y="68" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#f3ead8" opacity="0.7">"Lettere di Lucrezia Borgia"</text>
+      </g>
+
+      <!-- Range -->
+      <g transform="translate(610,30)">
+        <rect width="220" height="80" rx="6" fill="#b08c3a"/>
+        <text x="110" y="30" text-anchor="middle" font-family="Cormorant Garamond, serif" font-style="italic" font-size="22" fill="#1a1410">Range</text>
+        <text x="110" y="50" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" letter-spacing="2" fill="#1a1410" opacity="0.7">SEZIONE / CAPITOLO</text>
+        <text x="110" y="68" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#1a1410" opacity="0.7">"Capitolo III, fol. 12-18"</text>
+      </g>
+
+      <!-- Canvas -->
+      <g transform="translate(890,30)">
+        <rect width="180" height="80" rx="6" fill="#1f5d5d"/>
+        <text x="90" y="30" text-anchor="middle" font-family="Cormorant Garamond, serif" font-style="italic" font-size="22" fill="#f3ead8">Canvas</text>
+        <text x="90" y="50" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" letter-spacing="2" fill="#f3ead8" opacity="0.8">LA "TELA"</text>
+        <text x="90" y="68" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#f3ead8" opacity="0.7">"Pagina 1 — fol. 1r"</text>
+      </g>
+
+      <!-- Connectors -->
+      <g stroke="#3a2f24" stroke-width="1.5" fill="none" stroke-dasharray="4,3">
+        <path d="M 270 70 L 330 70" marker-end="url(#arrh)"/>
+        <path d="M 550 70 L 610 70" marker-end="url(#arrh)"/>
+        <path d="M 830 70 L 890 70" marker-end="url(#arrh)"/>
+      </g>
+
+      <!-- Below: drilling into a canvas -->
+      <g transform="translate(380,150)">
+        <text x="0" y="0" font-family="Inter, sans-serif" font-size="11" letter-spacing="3" fill="#6b1f1f" font-weight="600">DENTRO UN CANVAS</text>
+      </g>
+
+      <!-- Canvas detail -->
+      <g transform="translate(330,180)">
+        <rect width="240" height="240" rx="4" fill="#e8dcc1" stroke="#1a1410" stroke-width="1.5"/>
+        <text x="120" y="20" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" letter-spacing="2" fill="#6b1f1f" font-weight="600">CANVAS · 4080 × 2720</text>
+        <!-- Mock manuscript -->
+        <rect x="20" y="30" width="200" height="200" fill="#d9c9a4" stroke="#8b7050" stroke-width="0.5"/>
+        <g font-family="Cormorant Garamond, serif" font-style="italic" font-size="9" fill="#3a2f24" opacity="0.7">
+          <text x="30" y="48">Illustrissima et gloriosa</text>
+          <text x="30" y="62">domina, post recommen-</text>
+          <text x="30" y="76">dationem. Hodie accepi</text>
+          <text x="30" y="90">litteras vestras quibus</text>
+          <text x="30" y="104">significatis...</text>
+          <text x="30" y="160">Ferrara, die XV iulii</text>
+          <text x="30" y="174">M D II</text>
+          <text x="30" y="188">Lucretia</text>
+        </g>
+        <!-- Annotation overlay rectangle -->
+        <rect x="25" y="40" width="180" height="76" fill="none" stroke="#6b1f1f" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <text x="115" y="36" text-anchor="middle" font-family="Inter, sans-serif" font-size="8" fill="#6b1f1f" font-weight="600">ANNOTATION (painting)</text>
+      </g>
+
+      <!-- Annotation arrows -->
+      <g stroke="#6b1f1f" stroke-width="1.2" fill="none">
+        <path d="M 580 280 L 660 280" marker-end="url(#arrh)"/>
+      </g>
+
+      <!-- Annotation explanation -->
+      <g transform="translate(680,200)">
+        <rect width="380" height="200" rx="4" fill="rgba(255,255,255,0.5)" stroke="#b8a685"/>
+        <text x="20" y="30" font-family="Cormorant Garamond, serif" font-style="italic" font-size="20" fill="#1a1410">Annotation</text>
+        <text x="20" y="50" font-family="Inter, sans-serif" font-size="11" fill="#3a2f24">Ogni contenuto (immagine, audio, video, testo, commento)</text>
+        <text x="20" y="65" font-family="Inter, sans-serif" font-size="11" fill="#3a2f24">è "annotato" sopra il canvas. Si possono aggiungere:</text>
+        <g font-family="Inter, sans-serif" font-size="11" fill="#3a2f24">
+          <text x="30" y="92"><tspan font-weight="600" fill="#6b1f1f">painting</tspan> — l'immagine principale che il viewer mostra</text>
+          <text x="30" y="112"><tspan font-weight="600" fill="#6b1f1f">commenting</tspan> — note di studiosi o lettori</text>
+          <text x="30" y="132"><tspan font-weight="600" fill="#6b1f1f">supplementing</tspan> — trascrizioni testuali, OCR</text>
+          <text x="30" y="152"><tspan font-weight="600" fill="#6b1f1f">tagging</tspan> — etichette, persone, luoghi</text>
+          <text x="30" y="180" font-style="italic" fill="#1a1410">Le annotazioni sono persistenti e condivisibili.</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <div class="foot">
+    <!-- <span>Collection ⊃ Manifest ⊃ Range ⊃ Canvas ⊃ Annotation</span> -->
+    <!-- <span>Modello dati IIIF</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 15 — VIEWERS ===================== -->
+<section class="slide" data-slide="15">
+  <div class="top-label">
+    <span class="brand">Ecosistema</span>
+    <span class="num">15 / 24</span>
+  </div>
+  <h3 class="sub">— I client compatibili —</h3>
+  <h2 class="slide-h">L'<em>ecosistema</em> dei viewer IIIF.</h2>
+
+  <p class="body" style="font-size:14px; max-width:880px;">
+    Una volta esposto un manifesto, qualsiasi viewer IIIF può consumarlo.
+    Ecco i più diffusi — ognuno con un focus diverso, tutti gratuiti, tutti open source.
+  </p>
+
+  <div class="viewer-grid">
+    <div class="viewer-card">
+      <div class="viewer-icon">M</div>
+      <div class="viewer-body">
+        <h4>Mirador</h4>
+        <div class="vt">JS · open source · multi-window</div>
+        <p>Lo strumento "da ricerca": apri due, tre, quattro manifesti fianco a fianco e confronta. Sviluppato da Stanford, Harvard, Cambridge. Annotazioni avanzate con plug-in.</p>
+      </div>
+    </div>
+    <div class="viewer-card alt">
+      <div class="viewer-icon">U</div>
+      <div class="viewer-body">
+        <h4>Universal Viewer</h4>
+        <div class="vt">JS · digirati / British Library</div>
+        <p>Più "consumer-friendly": pulsanti chiari, modalità libro, metadati ben visibili. Adottato da British Library, Wellcome, V&amp;A. Ideale per cataloghi pubblici.</p>
+      </div>
+    </div>
+    <div class="viewer-card alt2">
+      <div class="viewer-icon">C</div>
+      <div class="viewer-body">
+        <h4>Clover</h4>
+        <div class="vt">React · Northwestern University</div>
+        <p>Specializzato in <strong>audio e video</strong> IIIF. Trascrizioni sincronizzate, indicizzazione temporale. Indispensabile per archivi audiovisivi (vedi: Interviste ai partigiani).</p>
+      </div>
+    </div>
+    <div class="viewer-card alt3">
+      <div class="viewer-icon">α</div>
+      <div class="viewer-body">
+        <h4>Annona, Theseus, Tify…</h4>
+        <div class="vt">SDK · librerie · framework</div>
+        <p>Per chi sviluppa interfacce custom. <strong>OpenSeadragon</strong> resta la base per il deep-zoom. Sono tutti compatibili con lo stesso manifesto JSON-LD.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="body" style="margin-top:18px; font-style:italic; color:var(--oxblood); text-align:center;">
+    → Lodovico utilizza i suoi viewer integrati basati su questi stessi standard.
+  </p>
+
+  <div class="foot">
+    <!-- <span>Un manifesto, infiniti modi di leggerlo</span> -->
+    <span>github.com/IIIF</span>
+  </div>
+</section>
+
+<!-- ===================== SLIDE 16 — LODOVICO FEATURES ===================== -->
+<section class="slide" data-slide="16">
+  <div class="top-label">
+    <span class="brand">Lodovico × IIIF</span>
+    <span class="num">16 / 24</span>
+  </div>
+  <h3 class="sub">— Cosa puoi fare nei viewer di Lodovico —</h3>
+  <h2 class="slide-h">Funzioni <em>abilitate</em> da IIIF.</h2>
+
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="fnum">01</div>
+      <h4><em>Deep zoom</em> a risoluzione nativa</h4>
+      <p>Avvicinati a un singolo carattere, a una pennellata, a un dettaglio della rilegatura.
+      Non scarichi mai un'immagine "intera": solo le tessere che ti servono.<br>→ Caricamento istantaneo anche su immagini da 500 megapixel.</p>
+    </div>
+    <div class="feat-card">
+      <div class="fnum">02</div>
+      <h4><em>Annotazioni</em> pubbliche e private</h4>
+      <p>Aggiungi note testuali a coordinate precise sul canvas. Le note pubbliche restano visibili agli altri studiosi; quelle private sono legate al tuo account.<br>
+      → Una stratificazione collaborativa di sapere.</p>
+    </div>
+    <div class="feat-card">
+      <div class="fnum">03</div>
+      <h4><em>Ritaglio</em> e raccolta di frammenti</h4>
+      <p>Estrai una porzione di un manoscritto, un capolettera, una firma: IIIF te lo serve come immagine indipendente con il proprio URL stabile.<br>→
+      Costruisci raccolte tematiche di "frammenti" per ricerca o didattica.</p>
+    </div>
+    <div class="feat-card">
+      <div class="fnum">04</div>
+      <h4><em>Confronto</em> fianco a fianco</h4>
+      <p>Apri lo stesso documento in due copie, due manoscritti diversi, una pagina e la sua trascrizione.<br>→
+      Funziona anche tra collezioni di istituti diversi, purché entrambi parlino IIIF.</p>
+    </div>
+    <div class="feat-card">
+      <div class="fnum">05</div>
+      <h4><em>Presentazioni</em> didattiche</h4>
+      <p>Crea una sequenza di canvas selezionati, con narrazione testuale e annotazioni.<br>→
+      Nasce uno "story-tour" del documento, esportabile e citabile in articoli scientifici.</p>
+    </div>
+    <div class="feat-card">
+      <div class="fnum">06</div>
+      <h4><em>Ricerca</em> nel testo OCR</h4>
+      <p>Per le collezioni dotate di trascrizione OCR, la Content Search API permette di cercare
+      una parola e vederla evidenziata <strong>direttamente sui pixel della pagina</strong>.<br>→
+      Migliora l'accessibilità dei documenti.
+    </p>
+    </div>
+  </div>
+
+  <div class="foot">
+    <!-- <span>Tutto questo è abilitato dallo standard, non da Lodovico</span> -->
+    <!-- <span>Funzionalità IIIF</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 17 — DEMO LIVE ===================== -->
+<section class="slide" data-slide="17">
+  <div class="top-label">
+    <span class="brand">Demo dal vivo</span>
+    <span class="num">17 / 24</span>
+  </div>
+  <h3 class="sub">— Mettiamoci in pratica —</h3>
+  <h2 class="slide-h"><em>Demo</em>: apriamo un manoscritto.</h2>
+
+  <!-- <div class="demo-stage">
+    <svg class="demo-svg" viewBox="0 0 1100 440" xmlns="http://www.w3.org/2000/svg">
+      <!-- Browser frame -->
+      <!-- <rect x="0" y="0" width="1100" height="440" rx="8" fill="#ffffff" stroke="#1a1410" stroke-width="1.5"/> -->
+      <!-- Browser bar -->
+      <!-- <rect x="0" y="0" width="1100" height="36" fill="#ebe4d2"/> -->
+      <!-- <line x1="0" y1="36" x2="1100" y2="36" stroke="#b8a685"/> -->
+      <!-- <circle cx="20" cy="18" r="5" fill="#c08b6e"/> -->
+      <!-- <circle cx="36" cy="18" r="5" fill="#d4b078"/> -->
+      <!-- <circle cx="52" cy="18" r="5" fill="#8aa172"/> -->
+      <!-- <rect x="80" y="10" width="800" height="16" rx="8" fill="#ffffff"/> -->
+      <!-- <text x="92" y="22" font-family="JetBrains Mono, monospace" font-size="10" fill="#3a2f24">https://lodovico.medialibrary.it/scheda.aspx?id=manoscritti/spallanzani/12</text> -->
+
+      <!-- Top bar (black header) -->
+      <!-- <rect x="0" y="36" width="1100" height="44" fill="#1a1410"/> -->
+      <!-- <text x="24" y="64" font-family="Cormorant Garamond, serif" font-style="italic" font-size="22" fill="#d9b96a">Lodovico</text> -->
+      <!-- <g font-family="Inter, sans-serif" font-size="9" letter-spacing="3" fill="#f3ead8" opacity="0.7"> -->
+        <!-- <text x="500" y="63">HOME</text> -->
+        <!-- <text x="565" y="63">ESPLORA</text> -->
+        <!-- <text x="640" y="63">COLLEZIONI</text> -->
+        <!-- <text x="730" y="63">MAPPA</text> -->
+        <!-- <text x="800" y="63">PROFILO</text> -->
+      <!-- </g> -->
+
+      <!-- Left sidebar — metadata -->
+      <!-- <rect x="0" y="80" width="270" height="360" fill="#f3ead8"/> -->
+      <!-- <line x1="270" y1="80" x2="270" y2="440" stroke="#b8a685"/> -->
+      <!-- <g font-family="Inter, sans-serif"> -->
+        <!-- <text x="20" y="108" font-size="9" letter-spacing="3" fill="#6b1f1f" font-weight="600">— SCHEDA —</text> -->
+        <!-- <text x="20" y="138" font-family="Cormorant Garamond, serif" font-style="italic" font-size="20" fill="#1a1410">Manoscritti</text> -->
+        <!-- <text x="20" y="156" font-family="Cormorant Garamond, serif" font-style="italic" font-size="20" fill="#1a1410">di Spallanzani</text> -->
+        <!-- <text x="20" y="180" font-size="10" fill="#3a2f24">Ms. Reggiani 12</text> -->
+
+        <!-- <text x="20" y="220" font-size="8" letter-spacing="2" fill="#6b1f1f" font-weight="600">DATA</text> -->
+        <!-- <text x="20" y="234" font-size="11" fill="#1a1410">1765 — 1799</text> -->
+
+        <!-- <text x="20" y="262" font-size="8" letter-spacing="2" fill="#6b1f1f" font-weight="600">ENTE</text> -->
+        <!-- <text x="20" y="276" font-size="10" fill="#1a1410">Biblioteca "A. Panizzi"</text> -->
+        <!-- <text x="20" y="288" font-size="10" fill="#1a1410">di Reggio Emilia</text> -->
+
+        <!-- <text x="20" y="316" font-size="8" letter-spacing="2" fill="#6b1f1f" font-weight="600">LICENZA</text> -->
+        <!-- <text x="20" y="330" font-size="10" fill="#1a1410">CC BY 4.0</text> -->
+
+        <!-- <rect x="20" y="350" width="220" height="32" rx="3" fill="#6b1f1f"/> -->
+        <!-- <text x="130" y="370" text-anchor="middle" font-size="10" letter-spacing="3" fill="#f3ead8" font-weight="600">SCARICA MANIFESTO</text> -->
+
+        <!-- <rect x="20" y="394" width="220" height="28" rx="3" fill="none" stroke="#1a1410"/> -->
+        <!-- <text x="130" y="412" text-anchor="middle" font-size="9" letter-spacing="2" fill="#1a1410" font-weight="600">APRI IN MIRADOR ↗</text> -->
+      </g>
+
+      <!-- Main viewer area -->
+      <!-- <rect x="270" y="80" width="600" height="360" fill="#2a201a"/> -->
+      <!-- Manuscript page mock -->
+      <!-- <rect x="320" y="110" width="220" height="300" fill="#e8dcc1" filter="url(#manu)"/> -->
+      <!-- <rect x="560" y="110" width="220" height="300" fill="#e8dcc1"/> -->
+      <!-- Mock writing -->
+      <!-- <g font-family="Cormorant Garamond, serif" font-style="italic" font-size="8" fill="#3a2f24" opacity="0.7"> -->
+        <!-- <text x="335" y="140">In nomine Domini nostri</text> -->
+        <!-- <text x="335" y="155">Iesu Christi. Anno millesimo</text> -->
+        <!-- <text x="335" y="170">septingentesimo sexagesimo</text> -->
+        <!-- <text x="335" y="185">quinto, mense iulio, in</text> -->
+        <!-- <text x="335" y="200">academia scientiarum</text> -->
+        <!-- <text x="335" y="220">Observationes meas circa</text> -->
+        <!-- <text x="335" y="235">animalcula infusoria,</text> -->
+        <!-- <text x="335" y="250">quibus opera mea ad-</text> -->
+        <!-- <text x="335" y="265">dixi per septennium...</text> -->
+        <!-- <text x="335" y="295">Lazarus Spallanzani</text> -->
+        <!-- <text x="335" y="310">Mutinae, kalendis augusti</text> -->
+      <!-- </g> -->
+      <!-- <g font-family="Cormorant Garamond, serif" font-style="italic" font-size="8" fill="#3a2f24" opacity="0.7"> -->
+        <!-- <text x="575" y="140">[recto] Caput primum</text> -->
+        <!-- <text x="575" y="160">de generatione spontanea</text> -->
+        <!-- <text x="575" y="180">Quaeritur an animalcula</text> -->
+        <!-- <text x="575" y="195">illa quae in liquoribus</text> -->
+        <!-- <text x="575" y="210">stagnantibus reperiuntur</text> -->
+        <!-- <text x="575" y="225">e nihilo oriantur, an</text> -->
+        <!-- <text x="575" y="240">vero ex semine quodam</text> -->
+        <!-- <text x="575" y="255">prius existente.</text> -->
+        <!-- <text x="575" y="290">Fig. I. Microscopium</text> -->
+        <!-- <text x="575" y="305">compositum.</text> -->
+        <!-- <circle cx="650" cy="345" r="20" fill="none" stroke="#6b1f1f" stroke-width="0.6" opacity="0.6"/> -->
+        <!-- <line x1="650" y1="325" x2="650" y2="365" stroke="#6b1f1f" stroke-width="0.4" opacity="0.6"/> -->
+      <!-- </g> -->
+      <!-- Annotation hotspot -->
+      <!-- <rect x="330" y="285" width="160" height="32" fill="none" stroke="#d9b96a" stroke-width="1.5" stroke-dasharray="3,2"/> -->
+      <!-- <circle cx="490" cy="285" r="10" fill="#d9b96a"/> -->
+      <!-- <text x="490" y="289" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" fill="#1a1410" font-weight="700">!</text> -->
+
+      <!-- Toolbar -->
+      <!-- <rect x="290" y="92" width="560" height="14" rx="2" fill="rgba(255,255,255,0.06)"/> -->
+      <!-- <g font-family="Inter, sans-serif" font-size="8" letter-spacing="2" fill="#d9b96a"> -->
+        <!-- <text x="300" y="103">⊕ ZOOM</text> -->
+        <!-- <text x="350" y="103">⌗ RITAGLIA</text> -->
+        <!-- <text x="410" y="103">✎ ANNOTA</text> -->
+        <!-- <text x="465" y="103">⇄ CONFRONTA</text> -->
+        <!-- <text x="540" y="103">↻ RUOTA</text> -->
+        <!-- <text x="595" y="103">⇣ DOWNLOAD</text> -->
+        <!-- <text x="670" y="103">⇗ PRESENTA</text> -->
+      <!-- </g> -->
+
+      <!-- Right sidebar — annotations -->
+      <!-- <rect x="870" y="80" width="230" height="360" fill="#f3ead8"/> -->
+      <!-- <line x1="870" y1="80" x2="870" y2="440" stroke="#b8a685"/> -->
+      <!-- <g font-family="Inter, sans-serif"> -->
+        <!-- <text x="888" y="108" font-size="9" letter-spacing="3" fill="#6b1f1f" font-weight="600">— ANNOTAZIONI —</text> -->
+
+        <!-- <rect x="888" y="120" width="194" height="64" rx="3" fill="rgba(217,185,106,0.2)" stroke="#b08c3a"/> -->
+        <!-- <text x="898" y="136" font-size="9" font-weight="600" fill="#1a1410">prof. Rossi · 2 ott</text> -->
+        <!-- <text x="898" y="151" font-family="Cormorant Garamond, serif" font-style="italic" font-size="11" fill="#1a1410">Riferimento al Saggio</text> -->
+        <!-- <text x="898" y="165" font-family="Cormorant Garamond, serif" font-style="italic" font-size="11" fill="#1a1410">di osservazioni del</text> -->
+        <!-- <text x="898" y="179" font-family="Cormorant Garamond, serif" font-style="italic" font-size="11" fill="#1a1410">1776, p. 14.</text> -->
+
+        <!-- <rect x="888" y="196" width="194" height="50" rx="3" fill="rgba(255,255,255,0.5)" stroke="#b8a685"/> -->
+        <!-- <text x="898" y="212" font-size="9" font-weight="600" fill="#1a1410">M. Bianchi · ieri</text> -->
+        <!-- <text x="898" y="227" font-family="Cormorant Garamond, serif" font-style="italic" font-size="11" fill="#1a1410">Variante grafica del</text> -->
+        <!-- <text x="898" y="241" font-family="Cormorant Garamond, serif" font-style="italic" font-size="11" fill="#1a1410">termine "animalcula".</text> -->
+
+        <!-- <rect x="888" y="258" width="194" height="50" rx="3" fill="rgba(255,255,255,0.5)" stroke="#b8a685"/> -->
+        <!-- <text x="898" y="274" font-size="9" font-weight="600" fill="#1a1410">L. Verde · 5 mag</text> -->
+        <!-- <text x="898" y="289" font-family="Cormorant Garamond, serif" font-style="italic" font-size="11" fill="#1a1410">Il microscopio di Fig. I</text> -->
+        <!-- <text x="898" y="303" font-family="Cormorant Garamond, serif" font-style="italic" font-size="11" fill="#1a1410">è quello di Cuff (1744).</text> -->
+
+        <!-- <rect x="888" y="394" width="194" height="28" rx="3" fill="#1a1410"/> -->
+        <!-- <text x="985" y="412" text-anchor="middle" font-size="9" letter-spacing="3" fill="#d9b96a" font-weight="600">+ NUOVA NOTA</text> -->
+      <!-- </g> -->
+    <!-- </svg> -->
+  <!-- </div> -->
+  <div>
+    <img style="width: 400px;margin-left: 15px;" src="manifest.png">
+    <img style="width: 400px;margin-left: 15px;" src="graduale.png">
+    <img style="width: 400px;margin-left: 15px;" src="autogrill.png">
+    <img style="width: 400px;margin-left: 15px;" src="posta.png">
+  </div>
+
+  <p class="body" style="margin-top:14px; font-style:italic; text-align:center; color:var(--ink);">
+    → Una pagina, un'annotazione, un confronto. Tutto attraverso un singolo manifesto.
+  </p>
+
+  <div class="foot">
+    <!-- <span>Mockup illustrativo dell'interfaccia di lettura</span> -->
+    <!-- <span>Demo</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 18 — WORLD INSTITUTIONS ===================== -->
+<section class="slide" data-slide="18">
+  <div class="top-label">
+    <span class="brand">Il dialogo globale</span>
+    <span class="num">18 / 24</span>
+  </div>
+  <h3 class="sub">— Lodovico apre le porte al mondo —</h3>
+  <h2 class="slide-h">Le collezioni dialogano con<br>chi ha aderito alla <em>modalità Open</em>.</h2>
+
+  <p class="lead" style="max-width:2000px;">
+    Lodovico collega i patrimoni dei suoi tenant e li fa dialogare con quelli degli istituti culturali di tutto il mondo che aderiscono alla modalità Open.
+  </p>
+  <div style="align-self: center;">
+  <img style="width: 1000px;" src="mappa.png">
+  </div>
+
+
+  <div class="foot">
+    <!-- <span>Una rete globale di patrimonio aperto</span> -->
+    <!-- <span>Modalità Open</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 19 — DRAG & DROP ===================== -->
+<section class="slide" data-slide="19">
+  <div class="top-label">
+    <span class="brand">La magia dell'interoperabilità</span>
+    <span class="num">19 / 24</span>
+  </div>
+  <h3 class="sub">— Il "trucco" di IIIF —</h3>
+  <h2 class="slide-h">Un manifesto da <em>qualunque parte</em>,<br>aperto in <em>qualunque viewer</em>.</h2>
+
+  <div class="dnd-stage">
+    <svg class="dnd-svg" viewBox="0 0 1000 380" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrd" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+          <path d="M0,0 L10,6 L0,12 Z" fill="#6b1f1f"/>
+        </marker>
+      </defs>
+
+      <!-- Sources -->
+      <g font-family="Cormorant Garamond, serif">
+        <g transform="translate(20,40)">
+          <rect width="180" height="60" rx="5" fill="#1a1410"/>
+          <text x="90" y="28" text-anchor="middle" font-style="italic" font-size="16" fill="#d9b96a">Vaticana</text>
+          <text x="90" y="46" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#f3ead8" opacity="0.7">digi.vatlib.it/.../manifest.json</text>
+        </g>
+        <g transform="translate(20,120)">
+          <rect width="180" height="60" rx="5" fill="#6b1f1f"/>
+          <text x="90" y="28" text-anchor="middle" font-style="italic" font-size="16" fill="#f3ead8">BnF Gallica</text>
+          <text x="90" y="46" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#f3ead8" opacity="0.7">gallica.bnf.fr/.../manifest.json</text>
+        </g>
+        <g transform="translate(20,200)">
+          <rect width="180" height="60" rx="5" fill="#1f5d5d"/>
+          <text x="90" y="28" text-anchor="middle" font-style="italic" font-size="16" fill="#f3ead8">Bodleian</text>
+          <text x="90" y="46" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#f3ead8" opacity="0.7">iiif.bodleian.ox.ac.uk/.../manifest</text>
+        </g>
+        <g transform="translate(20,280)">
+          <rect width="180" height="60" rx="5" fill="#b08c3a"/>
+          <text x="90" y="28" text-anchor="middle" font-style="italic" font-size="16" fill="#1a1410">Lodovico</text>
+          <text x="90" y="46" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8" fill="#1a1410" opacity="0.8">lodovico.medialibrary.it/.../manifest</text>
+        </g>
+      </g>
+
+      <!-- Connectors -->
+      <g stroke="#6b1f1f" stroke-width="1.5" fill="none">
+        <path d="M 200 70 Q 300 70 400 190" marker-end="url(#arrd)"/>
+        <path d="M 200 150 Q 300 150 400 195" marker-end="url(#arrd)"/>
+        <path d="M 200 230 Q 300 230 400 210" marker-end="url(#arrd)"/>
+        <path d="M 200 310 Q 300 310 400 220" marker-end="url(#arrd)"/>
+      </g>
+
+      <!-- Manifest envelope (central) -->
+      <g transform="translate(400,160)">
+        <rect width="200" height="100" rx="6" fill="#e8dcc1" stroke="#1a1410" stroke-width="2"/>
+        <text x="100" y="34" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" letter-spacing="3" fill="#6b1f1f" font-weight="600">MANIFEST.JSON</text>
+        <text x="100" y="58" text-anchor="middle" font-family="Cormorant Garamond, serif" font-style="italic" font-size="20" fill="#1a1410">{ }</text>
+        <text x="100" y="80" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#3a2f24">Lo stesso linguaggio,</text>
+        <text x="100" y="93" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#3a2f24">la stessa struttura, sempre.</text>
+      </g>
+
+      <!-- Right side: viewers -->
+      <g stroke="#6b1f1f" stroke-width="1.5" fill="none">
+        <path d="M 600 180 Q 700 180 780 70" marker-end="url(#arrd)"/>
+        <path d="M 600 200 Q 700 200 780 150" marker-end="url(#arrd)"/>
+        <path d="M 600 220 Q 700 220 780 230" marker-end="url(#arrd)"/>
+        <path d="M 600 240 Q 700 240 780 310" marker-end="url(#arrd)"/>
+      </g>
+
+      <!-- Viewers -->
+      <g font-family="Cormorant Garamond, serif">
+        <g transform="translate(780,40)">
+          <rect width="180" height="60" rx="5" fill="#f3ead8" stroke="#1a1410" stroke-width="1.5"/>
+          <text x="90" y="28" text-anchor="middle" font-style="italic" font-size="16" fill="#1a1410">Mirador</text>
+          <text x="90" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" fill="#3a2f24">Multi-window viewer</text>
+        </g>
+        <g transform="translate(780,120)">
+          <rect width="180" height="60" rx="5" fill="#f3ead8" stroke="#1a1410" stroke-width="1.5"/>
+          <text x="90" y="28" text-anchor="middle" font-style="italic" font-size="16" fill="#1a1410">Universal Viewer</text>
+          <text x="90" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" fill="#3a2f24">UI consumer-friendly</text>
+        </g>
+        <g transform="translate(780,200)">
+          <rect width="180" height="60" rx="5" fill="#f3ead8" stroke="#1a1410" stroke-width="1.5"/>
+          <text x="90" y="28" text-anchor="middle" font-style="italic" font-size="16" fill="#1a1410">Lodovico Viewer</text>
+          <text x="90" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" fill="#3a2f24">Integrato &amp; localizzato</text>
+        </g>
+        <g transform="translate(780,280)">
+          <rect width="180" height="60" rx="5" fill="#f3ead8" stroke="#1a1410" stroke-width="1.5"/>
+          <text x="90" y="28" text-anchor="middle" font-style="italic" font-size="16" fill="#1a1410">Aggregatori &amp; AI</text>
+          <text x="90" y="46" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" fill="#3a2f24">Indexing, search, ricerca</text>
+        </g>
+      </g>
+
+      <!-- Side labels -->
+      <text x="110" y="20" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" letter-spacing="3" fill="#6b1f1f" font-weight="600">SORGENTI · OVUNQUE</text>
+      <text x="500" y="140" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" letter-spacing="3" fill="#6b1f1f" font-weight="600">PROTOCOLLO COMUNE</text>
+      <text x="870" y="20" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" letter-spacing="3" fill="#6b1f1f" font-weight="600">CLIENT · OVUNQUE</text>
+    </svg>
+  </div>
+
+  <p class="body" style="margin-top:8px; font-style:italic; text-align:center; color:var(--ink);">
+    Copia un URL di manifesto, incollalo in un viewer compatibile: <strong>funziona</strong>.<br>
+    <!-- Dopo decenni di silos, è quasi commovente. -->
+  </p>
+
+  <div class="foot">
+    <!-- <span>"Drag &amp; drop" di manifesti</span> -->
+    <!-- <span>Interoperabilità reale</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 20 — GLOBAL TIMELINE ===================== -->
+<section class="slide" data-slide="20">
+  <div class="top-label">
+    <span class="brand">La comunità globale</span>
+    <span class="num">20 / 24</span>
+  </div>
+  <h3 class="sub">— Quindici anni di standard aperti —</h3>
+  <h2 class="slide-h">Una <em>traiettoria</em> condivisa.</h2>
+
+  <div class="global-grid">
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-year">2011</div>
+        <div class="tl-dot"></div>
+        <div class="tl-text"><strong>Stanford ospita il primo workshop</strong> con BL, BnF e Bodleian. Nasce l'Image API embrionale.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-year">2014</div>
+        <div class="tl-dot"></div>
+        <div class="tl-text"><strong>Image API 2.0 e Presentation API 2.0</strong>: il framework prende forma stabile e gli istituti iniziano ad adottarlo in produzione.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-year">2015</div>
+        <div class="tl-dot"></div>
+        <div class="tl-text"><strong>Fondazione del IIIF Consortium</strong> con 11 membri istituzionali: BL, Bodleian, Stanford, Yale, BnF, Vaticana, Wellcome, Princeton, Norvegese, Cornell, Oxford.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-year">2017</div>
+        <div class="tl-dot"></div>
+        <div class="tl-text"><strong>Vatican, Library of Congress, Getty</strong> entrano in IIIF. La massa critica è raggiunta.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-year">2020</div>
+        <div class="tl-dot"></div>
+        <div class="tl-text"><strong>Presentation API 3.0</strong> con supporto nativo a audio, video e oggetti 3D. IIIF non è più solo "immagini".</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-year">2024+</div>
+        <div class="tl-dot"></div>
+        <div class="tl-text"><strong>Lodovico aderisce e cresce</strong> come riferimento italiano per il patrimonio aggregato di Emilia-Romagna e oltre.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="open-stat" style="margin-top:0; grid-template-columns:1fr 1fr;">
+        <div class="os-card">
+          <div class="icon">200+</div>
+          <h4>Membri istituzionali</h4>
+          <p>Università, biblioteche nazionali, musei, archivi statali e fondazioni private in tutto il mondo.</p>
+        </div>
+        <div class="os-card">
+          <div class="icon">30+</div>
+          <h4>Paesi</h4>
+          <p>Dall'Australia al Cile, dalla Norvegia al Giappone. Comunità attive in inglese, francese, tedesco, italiano, giapponese.</p>
+        </div>
+        <div class="os-card">
+          <div class="icon">∞</div>
+          <h4>Manifesti pubblici</h4>
+          <p>Stime al di sopra del miliardo di immagini servite via IIIF, con crescita esponenziale annuale.</p>
+        </div>
+        <div class="os-card">
+          <div class="icon">CC</div>
+          <h4>Governance aperta</h4>
+          <p>Specifiche pubblicate sotto licenza CC-BY. Riunioni e working group aperti a chiunque voglia contribuire.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>iiif.io · iiif.io/community</span>
+    <!-- <span>Una infrastruttura condivisa per il patrimonio</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 21 — USE CASES ===================== -->
+<section class="slide" data-slide="21">
+  <div class="top-label">
+    <span class="brand">Casi d'uso</span>
+    <span class="num">21 / 24</span>
+  </div>
+  <h3 class="sub">— A chi serve, davvero —</h3>
+  <h2 class="slide-h">Quattro <em>vite</em> reali in cui IIIF cambia tutto.</h2>
+
+  <div class="uc-grid">
+    <div class="uc-card">
+      <span class="uc-tag">Filologia</span>
+      <h4>La studiosa che confronta tre testimoni</h4>
+      <p>Maria sta editando un canzoniere del Trecento. I tre manoscritti che le servono sono a Modena, Ferrara e Oxford. Apre i tre manifesti in Mirador, allinea le pagine, annota varianti. Tutto dal suo studio, senza chiedere foto in alta risoluzione.</p>
+      <div class="uc-quote">"Posso confrontare grafie, inchiostri, decorazioni. Cose che un microfilm non mi avrebbe mai dato."</div>
+    </div>
+    <div class="uc-card gold">
+      <span class="uc-tag">Didattica</span>
+      <h4>Il docente che costruisce un percorso</h4>
+      <p>Luca insegna paleografia. Crea una "presentazione" IIIF con 12 canvas selezionati da fondi diversi, ognuno annotato con osservazioni paleografiche e link bibliografici. La condivide con gli studenti come un singolo URL.</p>
+      <div class="uc-quote">"Una lezione interattiva navigabile, persistente, citabile."</div>
+    </div>
+    <div class="uc-card teal">
+      <span class="uc-tag">Cittadini</span>
+      <h4>L'appassionato che vede sua nonna</h4>
+      <p>Anna trova nelle "Fotografie della Liberazione di Modena" un'immagine in cui riconosce sua nonna ventenne. Zooma, la salva, aggiunge una nota pubblica con la sua identificazione. Domani uno storico la userà per arricchire i metadati.</p>
+      <div class="uc-quote">"L'archivio diventa vivo, partecipato, riconnesso alle persone."</div>
+    </div>
+    <div class="uc-card dark">
+      <span class="uc-tag">Ricerca avanzata</span>
+      <h4>Il bibliotecario che usa l'IA</h4>
+      <p>Giovanni vuole identificare automaticamente miniature simili in fondi diversi. I manifesti IIIF forniscono URL stabili a immagini di qualità — perfette per addestrare modelli di computer vision e collegare opere disperse.</p>
+      <div class="uc-quote">"L'interoperabilità è la base anche per l'AI culturale."</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <!-- <span>Da archivio chiuso a piattaforma di sapere</span> -->
+    <!-- <span>Use cases</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 22 — OPEN ACCESS ===================== -->
+<section class="slide" data-slide="22">
+  <div class="top-label">
+    <span class="brand">Filosofia</span>
+    <span class="num">22 / 24</span>
+  </div>
+  <div class="open-content">
+    <h3 class="sub">— Il manifesto culturale di Lodovico —</h3>
+    <h2 class="slide-h">L'<em>Open Data</em> non è un'opzione,<br>è il punto.</h2>
+
+    <p class="lead" style="margin-top: 20px;">
+      <em>Lodovico è un luogo in cui depositare e <strong>condividere</strong> al pubblico in modalità <strong>libera</strong> e <strong>gratuita</strong> il patrimonio culturale digitalizzato"</em>.
+    </p>
+
+    <div class="open-stat">
+      <div class="os-card">
+        <div class="icon">🔓</div>
+        <h4>Libera</h4>
+        <p>Le risorse ad accesso libero sono raggiungibili senza login né barriere, purché la licenza dell'istituto lo permetta. La mappa "Le risorse ad accesso libero" funziona da entry point.</p>
+      </div>
+      <div class="os-card">
+        <div class="icon">€</div>
+        <h4>Gratuita</h4>
+        <p>Nessun pay-per-view. Il modello economico è sostenuto da DHMoRe, dagli istituti aderenti e dal sistema MLOL. Per i tenant universitari, il login federato (SPID / Shibboleth) è gratuito.</p>
+      </div>
+      <div class="os-card">
+        <div class="icon">⇄</div>
+        <h4>Condivisa</h4>
+        <p>Grazie allo standard IIIF, ai metadati interoperabili, ai manifesti pubblici, il patrimonio non è "intrappolato" dentro Lodovico: è esposto al mondo perché altri lo possano usare, citare, riusare.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot">
+    <!-- <span>"Mettere in comunicazione patrimoni di enti differenti" — DHMoRe</span> -->
+    <!-- <span>Filosofia</span> -->
+  </div>
+</section>
+
+<!-- ===================== SLIDE 23 — DISCUSSION PROMPTS ===================== -->
+<section class="slide" data-slide="23">
+  <div class="top-label">
+    <span class="brand">Discussione</span>
+    <span class="num">23 / 24</span>
+  </div>
+  <h3 class="sub">— A voi la parola —</h3>
+  <h2 class="slide-h">Quattro <em>spunti</em> per il dibattito.</h2>
+
+  <ol class="prompts-list">
+    <li>
+      <span class="pr-num">i.</span>
+      <div class="pr-text">
+        <div class="pr-q">L'interoperabilità è davvero un beneficio <em>per tutti</em>, o pone problemi a chi conserva?</div>
+        <div class="pr-hint">Riflettere su ruoli istituzionali, controllo del contesto, attribuzioni, possibili usi impropri di immagini estratte dal loro contesto archivistico.</div>
+      </div>
+    </li>
+    <li>
+      <span class="pr-num">ii.</span>
+      <div class="pr-text">
+        <div class="pr-q">Cosa cambia per uno studioso poter <em>annotare</em> un manoscritto vaticano dal proprio computer?</div>
+        <div class="pr-hint">Pensare a tempi della ricerca, metodologia, condivisione di scoperte, persistenza delle annotazioni nel tempo, autorialità delle note.</div>
+      </div>
+    </li>
+    <li>
+      <span class="pr-num">iii.</span>
+      <div class="pr-text">
+        <div class="pr-q">Quale ruolo per i metadati in un mondo dove la struttura JSON è uguale ovunque, ma le <em>etichette</em> no?</div>
+        <div class="pr-hint">Multilinguismo, vocabolari controllati, allineamento con AAT, Wikidata, GeoNames. Il manifesto è universale; il significato no.</div>
+      </div>
+    </li>
+    <li>
+      <span class="pr-num">iv.</span>
+      <div class="pr-text">
+        <div class="pr-q">Lodovico, oltre Lodovico: è un <em>modello replicabile</em> per altri contesti regionali?</div>
+        <div class="pr-hint">Confrontare con altre piattaforme italiane (Internet Culturale, Cultura Italia) e europee (Europeana). Cosa rende Lodovico distintivo?</div>
+      </div>
+    </li>
+  </ol>
+
+  <div class="foot">
+    <span>15 minuti per il dibattito aperto</span>
+    <span>Discussione</span>
+  </div>
+</section>
+
+<!-- ===================== SLIDE 24 — CLOSING ===================== -->
+<section class="slide s24" data-slide="24">
+  <div class="folio outer"></div>
+  <div class="folio inner"></div>
+  <div class="s24-inner">
+    <div>
+      <div class="s1-pretitle" style="font-family: 'Inter', sans-serif; font-size: 12px; letter-spacing: 0.5em; text-transform: uppercase; color: var(--oxblood); font-weight: 600;">— FINE —</div>
+      <h1 class="s24-thanks">Grazie.<br><em>Domande?</em></h1>
+      <p class="lead" style="margin-top:24px; max-width:780px;">
+        Lodovico è un progetto vivo, in continua espansione. Ogni mese nuove collezioni si aggiungono;
+        ogni adesione amplia la rete. <em>Provatelo, esploratelo, criticatelo.</em>
+      </p>
+    </div>
+
+    <div class="s24-resources">
+      <div class="s24-block">
+        <h4>Per esplorare</h4>
+        <ul>
+          <li><code>lodovico.medialibrary.it</code></li>
+          <li>Mappa interattiva delle collezioni</li>
+          <li>Storie MLOL — percorsi tematici</li>
+          <li>Risorse ad accesso libero</li>
+        </ul>
+      </div>
+      <div class="s24-block">
+        <h4>Per approfondire IIIF</h4>
+        <ul>
+          <li><code>iiif.io</code> — specifiche</li>
+          <li><code>iiif.io/api/cookbook</code> — esempi</li>
+          <li><code>github.com/IIIF/awesome-iiif</code></li>
+          <li>Conferenze annuali IIIF</li>
+        </ul>
+      </div>
+      <div class="s24-block">
+        <h4>Contatti DHMoRe</h4>
+        <p>Centro Interdipartimentale<br>Digital Humanities</p>
+        <p style="margin-top:8px;">Largo Sant'Eufemia 19<br>41121 Modena</p>
+        <p style="margin-top:8px;"><code>lodovico@unimore.it</code></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<!-- ===================== NAV ===================== -->
+<div class="nav">
+  <button onclick="goToSlide(currentSlide - 1)" title="Precedente (←)">‹</button>
+  <button onclick="goToSlide(currentSlide + 1)" title="Successiva (→)">›</button>
+</div>
+<div class="progress" id="progress" style="width: 4.16%;"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let currentSlide = 1;
+
+  function goToSlide(n) {
+    if (n < 1) n = 1;
+    if (n > total) n = total;
+    slides.forEach(s => s.classList.remove('active'));
+    document.querySelector(`[data-slide="${n}"]`).classList.add('active');
+    currentSlide = n;
+    document.getElementById('progress').style.width = (n / total * 100) + '%';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      e.preventDefault(); goToSlide(currentSlide + 1);
+    }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault(); goToSlide(currentSlide - 1);
+    }
+    if (e.key === 'Home') { e.preventDefault(); goToSlide(1); }
+    if (e.key === 'End')  { e.preventDefault(); goToSlide(total); }
+    // Number keys 1-9 jump
+    if (/^[1-9]$/.test(e.key)) { goToSlide(parseInt(e.key)); }
+  });
+
+  // Click anywhere on slide (not on nav) advances
+  document.querySelector('.deck').addEventListener('click', e => {
+    if (e.target.closest('.nav')) return;
+    if (e.target.closest('button')) return;
+    // advance only if clicking on right half
+    const half = window.innerWidth / 2;
+    if (e.clientX > half) goToSlide(currentSlide + 1);
+    else goToSlide(currentSlide - 1);
+  });
+</script>
+
+</body>
+</html>
